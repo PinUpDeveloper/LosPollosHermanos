@@ -1,0 +1,20 @@
+@import "@solana/wallet-adapter-react-ui/styles.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  @apply bg-mist text-soil font-body;
+  background-image:
+    radial-gradient(circle at top left, rgba(216, 168, 77, 0.22), transparent 28%),
+    linear-gradient(180deg, #fffdf9 0%, #f5ecdf 100%);
+}
+
+.panel {
+  @apply rounded-3xl border border-bark/15 bg-white/80 shadow-lg shadow-bark/10 backdrop-blur;
+}
