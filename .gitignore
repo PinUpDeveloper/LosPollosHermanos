@@ -1,0 +1,16 @@
+node_modules/
+.next/
+target/
+.anchor/
+.DS_Store
+dist/
+build/
+coverage/
+*.log
+.env
+.env.local
+backend/.mvn/
+backend/target/
+frontend/.turbo/
+frontend/.vercel/
+
