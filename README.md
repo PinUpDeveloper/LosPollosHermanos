@@ -1,34 +1,211 @@
 # AgroToken
 
-AgroToken is a hackathon MVP for tokenizing future agricultural harvests on Solana devnet. Farmers create campaigns backed by proof documents, investors buy fractional harvest shares with a mock USDC token, and profits are later distributed proportionally to token holders.
+AgroToken — это платформа на базе Solana для токенизации будущего сельскохозяйственного урожая как реального актива (`RWA`). Фермеры создают кампании, подтверждённые off-chain доказательствами, инвесторы покупают дробные доли урожая, а после продажи урожая выручка распределяется прозрачно on-chain.
 
-## Stack
+Проект разрабатывается для `National Solana Hackathon by Decentrathon`, `Кейс 1: Tokenization of Real-World Assets (RWA)`.
 
-- Anchor / Rust smart contract in [`programs/agrotoken`](/C:/Users/Marsel/Desktop/LosPollosHermanos/programs/agrotoken)
-- Spring Boot 3 / Java 21 backend in [`backend`](/C:/Users/Marsel/Desktop/LosPollosHermanos/backend)
-- Next.js / TypeScript frontend in [`frontend`](/C:/Users/Marsel/Desktop/LosPollosHermanos/frontend)
-- PostgreSQL via [`docker-compose.yml`](/C:/Users/Marsel/Desktop/LosPollosHermanos/docker-compose.yml)
+## Проблема
 
-## Repo layout
+Фермерам в Казахстане часто нужен оборотный капитал ещё до сбора урожая, а розничные инвесторы почти не имеют доступа к прозрачным инвестициям в реальный сектор.
+
+У традиционного аграрного финансирования есть несколько проблем:
+
+- высокий порог входа для инвесторов
+- слабая прозрачность владения и выплат
+- низкий уровень доверия к посредникам
+- ограниченная цифровая доступность
+- ручное и непрозрачное распределение доходов
+
+AgroToken решает эту проблему, превращая будущий урожай в программируемые on-chain доли, подтверждённые off-chain доказательствами и oracle-подтверждением.
+
+## Решение
+
+Каждая кампания представляет собой раунд финансирования будущего урожая.
+
+- фермер создаёт кампанию под будущий урожай
+- off-chain документы и доказательства хэшируются и связываются с on-chain состоянием кампании
+- инвесторы покупают дробные доли за mock USDC в devnet
+- владение долями представлено через SPL-токены
+- после подтверждения продажи урожая выручка распределяется пропорционально между держателями токенов
+
+## Почему Solana
+
+Solana используется как основной слой расчётов и владения, а не как формальная интеграция кошелька.
+
+- `Anchor` program описывает жизненный цикл кампании и логику выплат
+- `SPL Token` mint представляет дробное владение урожаем
+- `PDA`-аккаунты используются для детерминированного управления кампанией, mint и vault
+- `Phantom` используется для подписи пользовательских транзакций
+- on-chain состояние должно быть источником истины для владения и статуса кампании
+
+## Основной пользовательский сценарий
+
+1. Фермер подключает кошелёк
+2. Фермер создаёт кампанию под будущий урожай
+3. Метаданные и хэш доказательства сохраняются и связываются с кампанией
+4. Инвесторы просматривают маркетплейс и покупают доли урожая
+5. Инвестор получает токены долей на свой кошелёк
+6. Oracle или фермер подтверждает факт продажи урожая
+7. Выручка распределяется on-chain между держателями токенов
+8. Кампания завершается
+
+## Архитектура
+
+### Смарт-контракт
+
+Директория: `programs/agrotoken`
+
+Ответственность:
+
+- создание состояния кампании
+- создание детерминированного SPL mint и USDC vault
+- продажа дробных долей урожая
+- подтверждение продажи урожая
+- распределение выручки между держателями
+- завершение жизненного цикла токенов
+
+### Backend
+
+Директория: `backend`
+
+Ответственность:
+
+- API для кампаний и инвестиций
+- хранение метаданных в PostgreSQL
+- построение и оркестрация Solana-транзакций
+- поддержка proof-of-asset
+- read-model для фронтенд-дашбордов
+
+### Frontend
+
+Директория: `frontend`
+
+Ответственность:
+
+- UI маркетплейса
+- кабинет фермера
+- кабинет инвестора
+- страница кампании и сценарий покупки
+- интеграция кошелька через Phantom
+
+## Структура репозитория
 
 ```text
-programs/agrotoken   Anchor program
-backend              REST API + PostgreSQL metadata
-frontend             Marketplace and dashboards
-tests                Anchor integration test skeleton
-migrations           Anchor deploy script
+programs/agrotoken   Смарт-контракт на Anchor
+backend              REST API на Spring Boot
+frontend             Веб-приложение на Next.js
+tests                Набор Anchor-тестов
+migrations           Скрипты деплоя Anchor
+docker-compose.yml   Конфигурация PostgreSQL
+Anchor.toml          Конфигурация Anchor workspace
+roadmap.md           Строгий план дальнейшей реализации
 ```
 
-## Local setup
+## Технологический стек
 
-1. Start Postgres: `docker compose up -d postgres`
-2. Run backend: `./mvnw spring-boot:run` from `backend`
-3. Run frontend: `npm install && npm run dev` from `frontend`
-4. Run Anchor tests: `anchor test`
+- Solana `devnet`
+- Anchor `Rust`
+- SPL Token
+- Java 21
+- Spring Boot 3
+- PostgreSQL
+- Next.js 14
+- TypeScript
+- Tailwind CSS
+- Phantom wallet adapter
 
-## Notes
+## Текущее состояние проекта
 
-- The smart contract is written for devnet and uses deterministic PDAs.
-- The backend currently returns unsigned transaction payload placeholders for wallet-signing flow integration.
-- The frontend uses Russian UI copy as requested for the Kazakhstan market.
+В репозитории уже присутствует полный каркас продукта:
 
+- структура Anchor program
+- структура backend API
+- frontend маркетплейс и дашборды
+- базовая интеграция кошелька
+
+Проект всё ещё доводится до состояния полноценного submission-grade MVP. Основные оставшиеся задачи:
+
+- завершить реальный on-chain flow end-to-end
+- заменить backend-заглушки транзакций на реальную Solana-интеграцию
+- дописать Anchor-тесты
+- завершить UX для proof-of-asset
+- стабилизировать demo flow на devnet
+
+Актуальный порядок реализации описан в [roadmap.md](/C:/Users/hp/LosPollosHermanos/roadmap.md).
+
+## Локальный запуск
+
+### Требования
+
+- Rust toolchain
+- Solana CLI
+- Anchor CLI
+- Node.js 18+
+- Java 21
+- Docker
+
+### Запуск PostgreSQL
+
+```bash
+docker compose up -d postgres
+```
+
+### Запуск backend
+
+```bash
+cd backend
+./mvnw spring-boot:run
+```
+
+Для Windows PowerShell:
+
+```powershell
+cd backend
+.\mvnw.cmd spring-boot:run
+```
+
+### Запуск frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+### Запуск Anchor-тестов
+
+```bash
+anchor test
+```
+
+## Важные замечания по окружению
+
+- целевая сеть — `Solana devnet`
+- проект использует детерминированные `PDA` seeds
+- UI ориентирован на рынок Казахстана
+- продукт нельзя считать завершённым, пока основной сценарий не демонстрируется как реально работающий on-chain
+
+## Что должно быть видно в демо
+
+Демо должно показывать:
+
+- создание кампании
+- покупку токенов
+- on-chain владение
+- связь между proof и активом
+- распределение выручки
+- реальное использование Solana как слоя расчётов
+
+## Чеклист перед сдачей
+
+- задеплоенный Solana program
+- рабочий end-to-end demo flow на devnet
+- понятный README
+- краткое описание архитектуры
+- скриншоты или demo video
+- GitHub-репозиторий
+- submission на `colosseum.com`
+
+## Позиционирование проекта
+
+AgroToken — это не просто интерфейс для краудфандинга. Это программируемый слой владения и распределения дохода для сельскохозяйственных real-world assets, адаптированный под рынок Казахстана и построенный на Solana.
