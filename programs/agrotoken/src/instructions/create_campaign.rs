@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token, TokenAccount};
 
+use crate::errors::AgroTokenError;
 use crate::state::{Campaign, CampaignStatus, CreateCampaignInput};
+use crate::state::{DESCRIPTION_MAX_LEN, TITLE_MAX_LEN};
 
 #[derive(Accounts)]
 #[instruction(campaign_id: u64)]
@@ -16,9 +18,25 @@ pub struct CreateCampaign<'info> {
         bump
     )]
     pub campaign: Account<'info, Campaign>,
-    #[account(mut)]
+    pub usdc_mint: Account<'info, Mint>,
+    #[account(
+        init,
+        payer = farmer,
+        seeds = [b"token_mint", campaign.key().as_ref()],
+        bump,
+        mint::decimals = 0,
+        mint::authority = campaign,
+        mint::freeze_authority = campaign
+    )]
     pub token_mint: Account<'info, Mint>,
-    #[account(mut)]
+    #[account(
+        init,
+        payer = farmer,
+        seeds = [b"vault", campaign.key().as_ref()],
+        bump,
+        token::mint = usdc_mint,
+        token::authority = campaign
+    )]
     pub vault: Account<'info, TokenAccount>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
@@ -30,6 +48,13 @@ pub fn handler(
     campaign_id: u64,
     input: CreateCampaignInput,
 ) -> Result<()> {
+    require!(
+        input.title.as_bytes().len() <= TITLE_MAX_LEN
+            && input.description.as_bytes().len() <= DESCRIPTION_MAX_LEN,
+        AgroTokenError::MetadataTooLong
+    );
+    require!(ctx.accounts.usdc_mint.decimals == 6, AgroTokenError::InvalidUsdcMint);
+
     let campaign = &mut ctx.accounts.campaign;
     campaign.farmer = ctx.accounts.farmer.key();
     campaign.oracle = input.oracle;

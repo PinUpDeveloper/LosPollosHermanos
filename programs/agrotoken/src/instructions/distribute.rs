@@ -8,8 +8,9 @@ use crate::state::{Campaign, CampaignStatus};
 pub struct Distribute<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut, has_one = vault)]
+    #[account(mut, has_one = vault, has_one = token_mint)]
     pub campaign: Account<'info, Campaign>,
+    pub token_mint: Account<'info, anchor_spl::token::Mint>,
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
@@ -31,34 +32,55 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
         !ctx.remaining_accounts.is_empty(),
         AgroTokenError::MissingHolderAccounts
     );
+    require!(
+        ctx.remaining_accounts.len() % 2 == 0,
+        AgroTokenError::InvalidRemainingAccounts
+    );
 
-    for account_info in ctx.remaining_accounts.iter() {
-        let holder_vault: Account<TokenAccount> = Account::try_from(account_info)?;
-        if holder_vault.amount == 0 {
+    let token_mint_key = ctx.accounts.token_mint.key();
+    let vault_mint = ctx.accounts.vault.mint;
+    let seeds = &[
+        b"campaign",
+        campaign.farmer.as_ref(),
+        &campaign.campaign_id.to_le_bytes(),
+        &[campaign.bump],
+    ];
+
+    for accounts in ctx.remaining_accounts.chunks_exact(2) {
+        let holder_token_account: Account<TokenAccount> = Account::try_from(&accounts[0])?;
+        let holder_usdc_account: Account<TokenAccount> = Account::try_from(&accounts[1])?;
+
+        require!(
+            holder_token_account.mint == token_mint_key,
+            AgroTokenError::InvalidHolderTokenAccount
+        );
+        require!(
+            holder_usdc_account.mint == vault_mint,
+            AgroTokenError::InvalidPayoutTokenAccount
+        );
+        require!(
+            holder_token_account.owner == holder_usdc_account.owner,
+            AgroTokenError::InvalidPayoutTokenAccount
+        );
+
+        if holder_token_account.amount == 0 {
             continue;
         }
 
-        let payout = holder_vault
+        let payout = holder_token_account
             .amount
             .checked_mul(campaign.harvest_total_usdc)
             .ok_or(AgroTokenError::MathOverflow)?
             .checked_div(campaign.total_supply)
             .ok_or(AgroTokenError::MathOverflow)?;
 
-        let seeds = &[
-            b"campaign",
-            campaign.farmer.as_ref(),
-            &campaign.campaign_id.to_le_bytes(),
-            &[campaign.bump],
-        ];
-
         transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
                 Transfer {
                     from: ctx.accounts.vault.to_account_info(),
-                    to: holder_vault.to_account_info(),
-                    authority: ctx.accounts.campaign.to_account_info(),
+                    to: holder_usdc_account.to_account_info(),
+                    authority: campaign.to_account_info(),
                 },
                 &[seeds],
             ),

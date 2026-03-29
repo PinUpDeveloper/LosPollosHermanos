@@ -20,5 +20,17 @@ pub enum AgroTokenError {
     MissingHolderAccounts,
     #[msg("Campaign cannot be cancelled in current state")]
     InvalidCancelState,
+    #[msg("Campaign metadata exceeds allocated storage")]
+    MetadataTooLong,
+    #[msg("USDC mint must use 6 decimals")]
+    InvalidUsdcMint,
+    #[msg("Remaining accounts must be passed in pairs")]
+    InvalidRemainingAccounts,
+    #[msg("Invalid holder share token account")]
+    InvalidHolderTokenAccount,
+    #[msg("Invalid payout token account")]
+    InvalidPayoutTokenAccount,
+    #[msg("Holder authority must sign and own the share token account")]
+    InvalidHolderAuthority,
 }
 
