@@ -4,7 +4,8 @@ import com.agrotoken.dto.BuyTokensRequest;
 import com.agrotoken.dto.CampaignResponse;
 import com.agrotoken.dto.ConfirmHarvestRequest;
 import com.agrotoken.dto.CreateCampaignRequest;
-import com.agrotoken.dto.UnsignedTransactionResponse;
+import com.agrotoken.dto.HolderResponse;
+import com.agrotoken.dto.TransactionContextResponse;
 import com.agrotoken.service.CampaignService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -44,24 +45,45 @@ public class CampaignController {
         return campaignService.getFarmerCampaigns(wallet);
     }
 
+    /** Returns on-chain addresses for frontend to build a buy_tokens transaction. */
     @PostMapping("/{id}/buy")
-    public UnsignedTransactionResponse buyTokens(@PathVariable Long id, @Valid @RequestBody BuyTokensRequest request) {
-        return campaignService.buildBuyTransaction(id, request.investorWallet(), request.tokensAmount());
+    public TransactionContextResponse buyTokens(
+            @PathVariable Long id,
+            @Valid @RequestBody BuyTokensRequest request
+    ) {
+        return campaignService.buildBuyContext(id);
     }
 
+    /** Records harvest confirmation after on-chain tx. */
     @PostMapping("/{id}/confirm")
-    public CampaignResponse confirmHarvest(@PathVariable Long id, @Valid @RequestBody ConfirmHarvestRequest request) {
+    public CampaignResponse confirmHarvest(
+            @PathVariable Long id,
+            @Valid @RequestBody ConfirmHarvestRequest request
+    ) {
         return campaignService.confirmHarvest(id, request);
     }
 
+    /** Returns on-chain addresses for frontend to build a distribute transaction. */
     @PostMapping("/{id}/distribute")
-    public UnsignedTransactionResponse distribute(@PathVariable Long id) {
-        return campaignService.buildDistributeTransaction(id);
+    public TransactionContextResponse distribute(@PathVariable Long id) {
+        return campaignService.buildDistributeContext(id);
     }
 
+    /** Updates tokens_sold after confirmed on-chain buy. */
+    @PostMapping("/{id}/record-purchase")
+    public CampaignResponse recordPurchase(@PathVariable Long id, @Valid @RequestBody BuyTokensRequest request) {
+        return campaignService.recordTokensPurchased(id, request.tokensAmount());
+    }
+
+    /** Marks campaign as DISTRIBUTED after on-chain distribute tx. */
+    @PostMapping("/{id}/mark-distributed")
+    public CampaignResponse markDistributed(@PathVariable Long id) {
+        return campaignService.markDistributed(id);
+    }
+
+    /** Returns real holder list from investment records. */
     @GetMapping("/{id}/holders")
-    public List<String> getHolders(@PathVariable Long id) {
+    public List<HolderResponse> getHolders(@PathVariable Long id) {
         return campaignService.getHolders(id);
     }
 }
-

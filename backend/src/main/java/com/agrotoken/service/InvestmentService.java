@@ -17,11 +17,21 @@ public class InvestmentService {
     }
 
     public List<InvestmentResponse> getPortfolio(String wallet) {
-        return investmentRepository.findByInvestorWallet(wallet).stream().map(this::toResponse).toList();
+        return investmentRepository.findByInvestorWallet(wallet).stream()
+                .map(this::toResponse).toList();
     }
 
     @Transactional
-    public InvestmentResponse recordInvestment(Long campaignId, String investorWallet, long tokensAmount, long usdcPaid, String txSignature) {
+    public InvestmentResponse recordInvestment(
+            Long campaignId, String investorWallet,
+            long tokensAmount, long usdcPaid, String txSignature
+    ) {
+        // Prevent duplicate records on retry
+        if (investmentRepository.existsByTxSignature(txSignature)) {
+            throw new IllegalStateException(
+                    "Investment with tx signature %s already recorded".formatted(txSignature));
+        }
+
         Investment investment = new Investment();
         investment.setCampaignId(campaignId);
         investment.setInvestorWallet(investorWallet);
@@ -44,4 +54,3 @@ public class InvestmentService {
         );
     }
 }
-

@@ -28,6 +28,7 @@ public class Campaign {
     private String proofDocumentUrl;
     private String proofHash;
     private String tokenMintAddress;
+    private String vaultAddress;
     private LocalDateTime createdAt;
     private LocalDateTime harvestDate;
 }
