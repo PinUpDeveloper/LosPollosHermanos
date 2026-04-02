@@ -7,6 +7,7 @@ import { PublicKey, Transaction } from "@solana/web3.js";
 import { BuyTokenModal } from "@/components/BuyTokenModal";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { ProofOfAsset } from "@/components/ProofOfAsset";
+import { SolanaVerificationPanel } from "@/components/SolanaVerificationPanel";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { api } from "@/lib/api";
 import { buildBuyTokensIx, getOrCreateATA } from "@/lib/agrotoken";
@@ -107,23 +108,16 @@ export default function CampaignDetailsPage() {
             <p className="text-sm text-soil/60">Культура</p>
             <p className="mt-2 text-lg">{campaign.cropType}</p>
           </div>
-          {campaign.onChainAddress && (
-            <div className="rounded-3xl bg-mist p-5">
-              <p className="text-sm text-soil/60">Campaign PDA</p>
-              <p className="mt-2 break-all text-xs font-mono">{campaign.onChainAddress}</p>
-            </div>
-          )}
-          {campaign.tokenMintAddress && (
-            <div className="rounded-3xl bg-mist p-5">
-              <p className="text-sm text-soil/60">Token Mint</p>
-              <p className="mt-2 break-all text-xs font-mono">{campaign.tokenMintAddress}</p>
-            </div>
-          )}
         </div>
 
         {/* Proof-of-Asset Layer */}
         <div className="mt-8">
           <ProofOfAsset campaign={campaign} />
+        </div>
+
+        {/* Solana Verification Panel */}
+        <div className="mt-8">
+          <SolanaVerificationPanel campaign={campaign} />
         </div>
 
         <div className="mt-6 flex justify-between text-sm">
