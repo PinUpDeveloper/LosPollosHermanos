@@ -6,6 +6,7 @@ import { useWallet, useConnection } from "@solana/wallet-adapter-react";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import { BuyTokenModal } from "@/components/BuyTokenModal";
 import { StatusTimeline } from "@/components/StatusTimeline";
+import { ProofOfAsset } from "@/components/ProofOfAsset";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { api } from "@/lib/api";
 import { buildBuyTokensIx, getOrCreateATA } from "@/lib/agrotoken";
@@ -97,14 +98,14 @@ export default function CampaignDetailsPage() {
 
         <div className="mt-8 grid gap-4 md:grid-cols-2">
           <div className="rounded-3xl bg-mist p-5">
-            <p className="text-sm text-soil/60">Proof Hash</p>
-            <p className="mt-2 break-all text-sm font-mono">{campaign.proofHash}</p>
-          </div>
-          <div className="rounded-3xl bg-mist p-5">
             <p className="text-sm text-soil/60">Дата урожая</p>
             <p className="mt-2 text-lg">
               {new Date(campaign.harvestDate).toLocaleDateString("ru-RU")}
             </p>
+          </div>
+          <div className="rounded-3xl bg-mist p-5">
+            <p className="text-sm text-soil/60">Культура</p>
+            <p className="mt-2 text-lg">{campaign.cropType}</p>
           </div>
           {campaign.onChainAddress && (
             <div className="rounded-3xl bg-mist p-5">
@@ -118,6 +119,11 @@ export default function CampaignDetailsPage() {
               <p className="mt-2 break-all text-xs font-mono">{campaign.tokenMintAddress}</p>
             </div>
           )}
+        </div>
+
+        {/* Proof-of-Asset Layer */}
+        <div className="mt-8">
+          <ProofOfAsset campaign={campaign} />
         </div>
 
         <div className="mt-6 flex justify-between text-sm">

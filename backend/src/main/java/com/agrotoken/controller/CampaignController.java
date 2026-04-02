@@ -6,6 +6,7 @@ import com.agrotoken.dto.ConfirmHarvestRequest;
 import com.agrotoken.dto.CreateCampaignRequest;
 import com.agrotoken.dto.HolderResponse;
 import com.agrotoken.dto.TransactionContextResponse;
+import com.agrotoken.dto.VerifyProofRequest;
 import com.agrotoken.service.CampaignService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -79,6 +80,15 @@ public class CampaignController {
     @PostMapping("/{id}/mark-distributed")
     public CampaignResponse markDistributed(@PathVariable Long id) {
         return campaignService.markDistributed(id);
+    }
+
+    /** Oracle/verifier marks proof-of-asset as verified or rejected. */
+    @PostMapping("/{id}/verify-proof")
+    public CampaignResponse verifyProof(
+            @PathVariable Long id,
+            @Valid @RequestBody VerifyProofRequest request
+    ) {
+        return campaignService.verifyProof(id, request.verifierWallet(), request.approved());
     }
 
     /** Returns real holder list from investment records. */
