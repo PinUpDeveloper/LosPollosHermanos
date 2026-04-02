@@ -27,6 +27,10 @@ public class Campaign {
     private String status;
     private String proofDocumentUrl;
     private String proofHash;
+    private String proofStatus;          // PENDING, UPLOADED, VERIFIED, REJECTED
+    private LocalDateTime proofUploadedAt;
+    private LocalDateTime proofVerifiedAt;
+    private String proofVerifierWallet;
     private String tokenMintAddress;
     private String vaultAddress;
     private LocalDateTime createdAt;

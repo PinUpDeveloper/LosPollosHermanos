@@ -17,6 +17,10 @@ export type Campaign = {
   status: string;
   proofDocumentUrl: string;
   proofHash: string;
+  proofStatus: string;
+  proofUploadedAt: string | null;
+  proofVerifiedAt: string | null;
+  proofVerifierWallet: string | null;
   tokenMintAddress: string;
   vaultAddress: string;
   createdAt: string;
@@ -36,8 +40,12 @@ const fallbackCampaigns: Campaign[] = [
     tokensSold: 620,
     pricePerToken: 80000000,
     status: "ACTIVE",
-    proofDocumentUrl: "#",
-    proofHash: "demo-proof-hash",
+    proofDocumentUrl: "https://agrotoken.kz/proof/wheat-akmola-2026.pdf",
+    proofHash: "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+    proofStatus: "VERIFIED",
+    proofUploadedAt: "2026-01-10T12:00:00",
+    proofVerifiedAt: "2026-01-12T15:30:00",
+    proofVerifierWallet: "OracleWallet111222333",
     tokenMintAddress: "",
     vaultAddress: "",
     createdAt: "2026-01-15T00:00:00",

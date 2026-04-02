@@ -36,6 +36,7 @@ export default function FarmerDashboardPage() {
   const [totalSupply, setTotalSupply] = useState(1000);
   const [pricePerToken, setPricePerToken] = useState(10);
   const [proofHash, setProofHash] = useState("");
+  const [proofDocumentUrl, setProofDocumentUrl] = useState("");
   const [harvestDate, setHarvestDate] = useState("2026-10-01");
 
   const [busy, setBusy] = useState("");
@@ -65,7 +66,7 @@ export default function FarmerDashboardPage() {
         region,
         totalSupply,
         pricePerToken: pricePerToken * 1_000_000, // convert USDC to lamports
-        proofDocumentUrl: "https://agrotoken.kz/proof",
+        proofDocumentUrl: proofDocumentUrl || "https://agrotoken.kz/proof",
         proofHash: proofHash || "0".repeat(64),
         harvestDate: `${harvestDate}T00:00:00`,
       });
@@ -98,6 +99,7 @@ export default function FarmerDashboardPage() {
       setTitle("");
       setDescription("");
       setProofHash("");
+      setProofDocumentUrl("");
       refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Ошибка создания кампании");
@@ -261,12 +263,24 @@ export default function FarmerDashboardPage() {
               className="w-full rounded-2xl border border-bark/20 px-4 py-3"
             />
           </div>
-          <input
-            value={proofHash}
-            onChange={(e) => setProofHash(e.target.value)}
-            placeholder="Proof Hash (hex, необязательно)"
-            className="w-full rounded-2xl border border-bark/20 px-4 py-3"
-          />
+          <div className="rounded-2xl border border-bark/15 bg-mist/40 p-4 space-y-3">
+            <p className="text-xs font-medium uppercase tracking-wider text-soil/50">Proof-of-Asset</p>
+            <input
+              value={proofDocumentUrl}
+              onChange={(e) => setProofDocumentUrl(e.target.value)}
+              placeholder="Ссылка на документ (URL)"
+              className="w-full rounded-2xl border border-bark/20 bg-white px-4 py-3 text-sm"
+            />
+            <input
+              value={proofHash}
+              onChange={(e) => setProofHash(e.target.value)}
+              placeholder="SHA-256 хеш документа (hex)"
+              className="w-full rounded-2xl border border-bark/20 bg-white px-4 py-3 font-mono text-sm"
+            />
+            <p className="text-xs text-soil/40">
+              Загрузите документ подтверждения актива и укажите его SHA-256 хеш. Хеш будет записан on-chain.
+            </p>
+          </div>
           <button
             type="submit"
             disabled={!publicKey || busy === "create"}

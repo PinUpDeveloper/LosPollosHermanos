@@ -44,6 +44,8 @@ public class CampaignService {
         campaign.setStatus("ACTIVE");
         campaign.setProofDocumentUrl(request.proofDocumentUrl());
         campaign.setProofHash(request.proofHash());
+        campaign.setProofStatus("UPLOADED");
+        campaign.setProofUploadedAt(LocalDateTime.now());
         campaign.setCreatedAt(LocalDateTime.now());
         campaign.setHarvestDate(request.harvestDate());
 
@@ -136,6 +138,18 @@ public class CampaignService {
     }
 
     /**
+     * Oracle/verifier marks the proof-of-asset as verified or rejected.
+     */
+    @Transactional
+    public CampaignResponse verifyProof(Long id, String verifierWallet, boolean approved) {
+        Campaign campaign = findCampaign(id);
+        campaign.setProofStatus(approved ? "VERIFIED" : "REJECTED");
+        campaign.setProofVerifiedAt(LocalDateTime.now());
+        campaign.setProofVerifierWallet(verifierWallet);
+        return toResponse(campaignRepository.save(campaign));
+    }
+
+    /**
      * Updates campaign status to DISTRIBUTED after on-chain distribute tx.
      */
     @Transactional
@@ -179,6 +193,10 @@ public class CampaignService {
                 campaign.getStatus(),
                 campaign.getProofDocumentUrl(),
                 campaign.getProofHash(),
+                campaign.getProofStatus(),
+                campaign.getProofUploadedAt(),
+                campaign.getProofVerifiedAt(),
+                campaign.getProofVerifierWallet(),
                 campaign.getTokenMintAddress(),
                 campaign.getVaultAddress(),
                 campaign.getCreatedAt(),
