@@ -17,6 +17,7 @@ public record CampaignResponse(
         String proofDocumentUrl,
         String proofHash,
         String tokenMintAddress,
+        String vaultAddress,
         LocalDateTime createdAt,
         LocalDateTime harvestDate
 ) {

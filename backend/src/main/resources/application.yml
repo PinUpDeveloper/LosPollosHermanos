@@ -1,6 +1,6 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/agrotoken}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/agrotoken}
     username: ${SPRING_DATASOURCE_USERNAME:agrotoken}
     password: ${SPRING_DATASOURCE_PASSWORD:agrotoken}
   jpa:
@@ -19,4 +19,5 @@ agrotoken:
     rpc-url: ${AGROTOKEN_SOLANA_RPC_URL:https://api.devnet.solana.com}
     program-id: ${AGROTOKEN_PROGRAM_ID:Agro111111111111111111111111111111111111111}
     oracle-wallet: ${AGROTOKEN_ORACLE_WALLET:Oracle11111111111111111111111111111111111}
+    usdc-mint: ${AGROTOKEN_USDC_MINT:4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU}
 
