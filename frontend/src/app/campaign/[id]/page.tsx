@@ -8,6 +8,7 @@ import { BuyTokenModal } from "@/components/BuyTokenModal";
 import { StatusTimeline } from "@/components/StatusTimeline";
 import { ProofOfAsset } from "@/components/ProofOfAsset";
 import { SolanaVerificationPanel } from "@/components/SolanaVerificationPanel";
+import { ProofTimeline } from "@/components/ProofTimeline";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { api } from "@/lib/api";
 import { buildBuyTokensIx, getOrCreateATA } from "@/lib/agrotoken";
@@ -108,6 +109,11 @@ export default function CampaignDetailsPage() {
             <p className="text-sm text-soil/60">Культура</p>
             <p className="mt-2 text-lg">{campaign.cropType}</p>
           </div>
+        </div>
+
+        {/* Campaign Lifecycle Timeline */}
+        <div className="mt-8">
+          <ProofTimeline campaign={campaign} />
         </div>
 
         {/* Proof-of-Asset Layer */}
