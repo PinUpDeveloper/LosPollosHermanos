@@ -9,6 +9,7 @@ import { StatusTimeline } from "@/components/StatusTimeline";
 import { ProofOfAsset } from "@/components/ProofOfAsset";
 import { SolanaVerificationPanel } from "@/components/SolanaVerificationPanel";
 import { ProofTimeline } from "@/components/ProofTimeline";
+import { FarmerPassportCard } from "@/components/FarmerPassportCard";
 import { useCampaigns } from "@/hooks/useCampaigns";
 import { api } from "@/lib/api";
 import { buildBuyTokensIx, getOrCreateATA } from "@/lib/agrotoken";
@@ -169,6 +170,12 @@ export default function CampaignDetailsPage() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {campaign.farmerPassport && (
+          <div className="mt-6">
+            <FarmerPassportCard passport={campaign.farmerPassport} />
           </div>
         )}
 

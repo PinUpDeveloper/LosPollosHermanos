@@ -4,6 +4,7 @@ import com.agrotoken.dto.CampaignResponse;
 import com.agrotoken.dto.CampaignLifecycleEventResponse;
 import com.agrotoken.dto.ConfirmHarvestRequest;
 import com.agrotoken.dto.CreateCampaignRequest;
+import com.agrotoken.dto.FarmerPassportResponse;
 import com.agrotoken.dto.HolderResponse;
 import com.agrotoken.dto.TransactionContextResponse;
 import com.agrotoken.model.Campaign;
@@ -24,19 +25,22 @@ public class CampaignService {
     private final SolanaService solanaService;
     private final RiskScoringService riskScoringService;
     private final TrustScoringService trustScoringService;
+    private final FarmerPassportService farmerPassportService;
 
     public CampaignService(
             CampaignRepository campaignRepository,
             InvestmentRepository investmentRepository,
             SolanaService solanaService,
             RiskScoringService riskScoringService,
-            TrustScoringService trustScoringService
+            TrustScoringService trustScoringService,
+            FarmerPassportService farmerPassportService
     ) {
         this.campaignRepository = campaignRepository;
         this.investmentRepository = investmentRepository;
         this.solanaService = solanaService;
         this.riskScoringService = riskScoringService;
         this.trustScoringService = trustScoringService;
+        this.farmerPassportService = farmerPassportService;
     }
 
     @Transactional
@@ -231,8 +235,10 @@ public class CampaignService {
     }
 
     private CampaignResponse toResponse(Campaign campaign) {
-        int farmerHistory = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet()).size();
+        List<Campaign> farmerCampaigns = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet());
+        int farmerHistory = farmerCampaigns.size();
         TrustScoreResult trustScore = trustScoringService.score(campaign, farmerHistory);
+        FarmerPassportResponse farmerPassport = farmerPassportService.build(campaign.getFarmerWallet(), farmerCampaigns);
 
         return new CampaignResponse(
                 campaign.getId(),
@@ -261,6 +267,7 @@ public class CampaignService {
                 trustScore.trustScore(),
                 trustScore.trustLabel(),
                 trustScore.trustReasons(),
+                farmerPassport,
                 buildLifecycleEvents(campaign)
         );
     }

@@ -30,6 +30,7 @@ public record CampaignResponse(
         Integer trustScore,
         String trustLabel,
         List<String> trustReasons,
+        FarmerPassportResponse farmerPassport,
         List<CampaignLifecycleEventResponse> lifecycleEvents
 ) {
 }
