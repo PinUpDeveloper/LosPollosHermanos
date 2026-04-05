@@ -1,15 +1,9 @@
 "use client";
 
-import { Campaign } from "@/hooks/useCampaigns";
-
-type Step = {
-  label: string;
-  date: string | null;
-  done: boolean;
-};
+import { Campaign, CampaignLifecycleEvent } from "@/hooks/useCampaigns";
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "";
+  if (!iso) return "Pending";
   return new Date(iso).toLocaleString("ru-RU", {
     day: "numeric",
     month: "short",
@@ -19,92 +13,44 @@ function formatDate(iso: string | null): string {
   });
 }
 
-const STATUS_ORDER = ["ACTIVE", "FUNDED", "HARVEST_SOLD", "DISTRIBUTED"];
-
-function statusReached(current: string, target: string): boolean {
-  const ci = STATUS_ORDER.indexOf(current);
-  const ti = STATUS_ORDER.indexOf(target);
-  if (ci === -1 || ti === -1) return false;
-  return ci >= ti;
+function truncateValue(value: string | null) {
+  if (!value) return null;
+  if (value.length <= 20) return value;
+  return `${value.slice(0, 10)}...${value.slice(-6)}`;
 }
 
-function buildSteps(campaign: Campaign): Step[] {
-  const steps: Step[] = [];
-
-  // 1. Campaign created
-  steps.push({
-    label: "Кампания создана",
-    date: campaign.createdAt,
-    done: true,
-  });
-
-  // 2. Proof uploaded
-  steps.push({
-    label: "Proof-of-Asset загружен",
-    date: campaign.proofUploadedAt,
-    done: !!campaign.proofUploadedAt,
-  });
-
-  // 3. Oracle verified
-  steps.push({
-    label: "Oracle верифицировал",
-    date: campaign.proofVerifiedAt,
-    done: campaign.proofStatus === "VERIFIED",
-  });
-
-  // 4. Fully funded
-  const funded = statusReached(campaign.status, "FUNDED");
-  steps.push({
-    label: "Полностью профинансировано",
-    date: null,
-    done: funded,
-  });
-
-  // 5. Harvest sold
-  const harvestSold = statusReached(campaign.status, "HARVEST_SOLD");
-  steps.push({
-    label: "Урожай продан",
-    date: null,
-    done: harvestSold,
-  });
-
-  // 6. Distributed
-  const distributed = statusReached(campaign.status, "DISTRIBUTED");
-  steps.push({
-    label: "Выплаты распределены",
-    date: null,
-    done: distributed,
-  });
-
-  return steps;
+function explorerUrl(address: string) {
+  return `https://explorer.solana.com/address/${address}?cluster=devnet`;
 }
 
 export function ProofTimeline({ campaign }: { campaign: Campaign }) {
-  const steps = buildSteps(campaign);
+  const events = campaign.lifecycleEvents ?? [];
 
   return (
     <div className="rounded-3xl border border-bark/15 bg-white p-6">
-      <h3 className="font-display text-xl">Lifecycle кампании</h3>
+      <h3 className="font-display text-xl">Live Proof Stream</h3>
       <p className="mt-1 text-sm text-soil/55">
-        Полный путь актива от создания до выплаты инвесторам.
+        Live audit trail kampanii ot sozdaniya i proof verification do funding milestones i payout.
       </p>
 
       <div className="mt-5 ml-1">
-        {steps.map((step, i) => {
-          const isLast = i === steps.length - 1;
+        {events.map((event: CampaignLifecycleEvent, i) => {
+          const isLast = i === events.length - 1;
+          const reference = truncateValue(event.referenceValue);
+          const actor = truncateValue(event.actorWallet);
+          const canOpenExplorer = !!event.explorerAddress && event.explorerAddress.length > 20;
 
           return (
-            <div key={i} className="flex gap-4">
-              {/* Vertical line + dot */}
+            <div key={`${event.type}-${i}`} className="flex gap-4">
               <div className="flex flex-col items-center">
                 <div
                   className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 ${
-                    step.done
+                    event.done
                       ? "border-leaf bg-leaf text-white"
                       : "border-bark/25 bg-white text-bark/30"
                   }`}
                 >
-                  {step.done ? (
+                  {event.done ? (
                     <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
                       <path
                         fillRule="evenodd"
@@ -118,26 +64,40 @@ export function ProofTimeline({ campaign }: { campaign: Campaign }) {
                 </div>
                 {!isLast && (
                   <div
-                    className={`w-0.5 flex-1 ${
-                      step.done ? "bg-leaf/40" : "bg-bark/12"
-                    }`}
+                    className={`w-0.5 flex-1 ${event.done ? "bg-leaf/40" : "bg-bark/12"}`}
                   />
                 )}
               </div>
 
-              {/* Content */}
               <div className={`pb-6 ${isLast ? "pb-0" : ""}`}>
-                <p
-                  className={`text-sm font-medium ${
-                    step.done ? "text-soil" : "text-soil/40"
-                  }`}
-                >
-                  {step.label}
+                <p className={`text-sm font-medium ${event.done ? "text-soil" : "text-soil/40"}`}>
+                  {event.label}
                 </p>
-                {step.date && (
-                  <p className="mt-0.5 text-xs text-soil/45">
-                    {formatDate(step.date)}
-                  </p>
+                <p className="mt-0.5 text-xs text-soil/45">{formatDate(event.occurredAt)}</p>
+                <p className="mt-1 text-sm text-soil/65">{event.description}</p>
+                {(actor || reference || canOpenExplorer) && (
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs">
+                    {actor && (
+                      <span className="rounded-full bg-mist px-3 py-1 text-soil/70">
+                        actor: {actor}
+                      </span>
+                    )}
+                    {reference && (
+                      <span className="rounded-full bg-mist px-3 py-1 text-soil/70">
+                        ref: {reference}
+                      </span>
+                    )}
+                    {canOpenExplorer && (
+                      <a
+                        href={explorerUrl(event.explorerAddress!)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="rounded-full bg-leaf/10 px-3 py-1 text-leaf hover:bg-leaf/15"
+                      >
+                        Open in Explorer
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
             </div>

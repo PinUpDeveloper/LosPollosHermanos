@@ -29,7 +29,8 @@ public record CampaignResponse(
         String riskExplanation,
         Integer trustScore,
         String trustLabel,
-        List<String> trustReasons
+        List<String> trustReasons,
+        List<CampaignLifecycleEventResponse> lifecycleEvents
 ) {
 }
 
