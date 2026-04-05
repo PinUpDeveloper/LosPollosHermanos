@@ -27,6 +27,9 @@ export type Campaign = {
   harvestDate: string;
   riskScore: number | null;
   riskExplanation: string | null;
+  trustScore: number | null;
+  trustLabel: string | null;
+  trustReasons: string[];
 };
 
 const fallbackCampaigns: Campaign[] = [
@@ -54,6 +57,13 @@ const fallbackCampaigns: Campaign[] = [
     harvestDate: "2026-09-15T00:00:00",
     riskScore: 35,
     riskExplanation: "Умеренный риск: пшеница — стабильная культура, но Акмолинская область подвержена засухам в летний период.",
+    trustScore: 74,
+    trustLabel: "MEDIUM_TRUST",
+    trustReasons: [
+      "Proof-of-asset verified by oracle",
+      "AI risk model sees moderate campaign risk",
+      "Campaign already shows early investor traction",
+    ],
   },
 ];
 

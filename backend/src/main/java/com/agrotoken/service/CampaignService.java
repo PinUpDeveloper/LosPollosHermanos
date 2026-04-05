@@ -8,6 +8,7 @@ import com.agrotoken.dto.TransactionContextResponse;
 import com.agrotoken.model.Campaign;
 import com.agrotoken.repository.CampaignRepository;
 import com.agrotoken.repository.InvestmentRepository;
+import com.agrotoken.service.TrustScoringService.TrustScoreResult;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -20,17 +21,20 @@ public class CampaignService {
     private final InvestmentRepository investmentRepository;
     private final SolanaService solanaService;
     private final RiskScoringService riskScoringService;
+    private final TrustScoringService trustScoringService;
 
     public CampaignService(
             CampaignRepository campaignRepository,
             InvestmentRepository investmentRepository,
             SolanaService solanaService,
-            RiskScoringService riskScoringService
+            RiskScoringService riskScoringService,
+            TrustScoringService trustScoringService
     ) {
         this.campaignRepository = campaignRepository;
         this.investmentRepository = investmentRepository;
         this.solanaService = solanaService;
         this.riskScoringService = riskScoringService;
+        this.trustScoringService = trustScoringService;
     }
 
     @Transactional
@@ -194,6 +198,9 @@ public class CampaignService {
     }
 
     private CampaignResponse toResponse(Campaign campaign) {
+        int farmerHistory = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet()).size();
+        TrustScoreResult trustScore = trustScoringService.score(campaign, farmerHistory);
+
         return new CampaignResponse(
                 campaign.getId(),
                 campaign.getOnChainAddress(),
@@ -217,7 +224,10 @@ public class CampaignService {
                 campaign.getCreatedAt(),
                 campaign.getHarvestDate(),
                 campaign.getRiskScore(),
-                campaign.getRiskExplanation()
+                campaign.getRiskExplanation(),
+                trustScore.trustScore(),
+                trustScore.trustLabel(),
+                trustScore.trustReasons()
         );
     }
 }

@@ -17,6 +17,28 @@ function RiskBadge({ score }: { score: number | null }) {
   );
 }
 
+function TrustBadge({ score, label }: { score: number | null; label: string | null }) {
+  if (score === null) return null;
+  const color =
+    score >= 80
+      ? "bg-emerald-100 text-emerald-800"
+      : score >= 60
+        ? "bg-sky-100 text-sky-800"
+        : "bg-orange-100 text-orange-800";
+  const text =
+    label === "HIGH_TRUST"
+      ? "High Trust"
+      : label === "MEDIUM_TRUST"
+        ? "Medium Trust"
+        : "Watch Carefully";
+
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
+      {text} {score}
+    </span>
+  );
+}
+
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
   const progress = Math.round((campaign.tokensSold / campaign.totalSupply) * 100);
 
@@ -27,12 +49,22 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           <p className="text-sm uppercase tracking-[0.2em] text-bark">{campaign.region}</p>
           <h3 className="font-display text-2xl">{campaign.title}</h3>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <TrustBadge score={campaign.trustScore} label={campaign.trustLabel} />
           <RiskBadge score={campaign.riskScore} />
           <span className="rounded-full bg-wheat/20 px-3 py-1 text-sm">{campaign.cropType}</span>
         </div>
       </div>
       <p className="mb-4 text-sm text-soil/75">{campaign.description}</p>
+      {campaign.trustReasons.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {campaign.trustReasons.slice(0, 2).map((reason) => (
+            <span key={reason} className="rounded-full bg-mist px-3 py-1 text-xs text-soil/70">
+              {reason}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="mb-2 flex justify-between text-sm">
         <span>Прогресс</span>
         <span>{progress}%</span>

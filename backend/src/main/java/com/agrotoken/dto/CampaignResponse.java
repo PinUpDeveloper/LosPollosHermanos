@@ -1,6 +1,7 @@
 package com.agrotoken.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record CampaignResponse(
         Long id,
@@ -25,7 +26,10 @@ public record CampaignResponse(
         LocalDateTime createdAt,
         LocalDateTime harvestDate,
         Integer riskScore,
-        String riskExplanation
+        String riskExplanation,
+        Integer trustScore,
+        String trustLabel,
+        List<String> trustReasons
 ) {
 }
 
