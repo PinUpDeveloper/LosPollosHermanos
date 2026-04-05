@@ -1,5 +1,13 @@
 # AgroToken
 
+![Solana](https://img.shields.io/badge/Solana-Devnet-00D18C?style=for-the-badge&logo=solana&logoColor=white&labelColor=7C3AED)
+![Anchor](https://img.shields.io/badge/Anchor-Rust-FF6B35?style=for-the-badge&logo=rust&logoColor=white&labelColor=1F2937)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot-3-84CC16?style=for-the-badge&logo=springboot&logoColor=white&labelColor=166534)
+![Next.js](https://img.shields.io/badge/Next.js-14-111827?style=for-the-badge&logo=nextdotjs&logoColor=white&labelColor=000000)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-3B82F6?style=for-the-badge&logo=postgresql&logoColor=white&labelColor=1D4ED8)
+![Ollama](https://img.shields.io/badge/Ollama-AI_Risk-EC4899?style=for-the-badge&logoColor=white&labelColor=9D174D)
+![Hackathon](https://img.shields.io/badge/National_Solana_Hackathon-RWA_Track-F59E0B?style=for-the-badge&logo=trophy&logoColor=white&labelColor=92400E)
+
 > AgroToken — это платформа на базе Solana для токенизации будущего сельскохозяйственного урожая как реального актива (`RWA`). Фермеры создают кампании, подтверждённые off-chain доказательствами, инвесторы покупают дробные доли урожая, а после продажи урожая выручка распределяется прозрачно on-chain.
 >
 > Проект разрабатывается для `National Solana Hackathon by Decentrathon`, `Кейс 1: Tokenization of Real-World Assets (RWA)`.
@@ -9,6 +17,7 @@
 ## Содержание
 
 - [Документация и материалы](#документация-и-материалы)
+- [Команда](#команда)
 - [Проблема](#проблема)
 - [Решение](#решение)
 - [Почему Solana](#почему-solana)
@@ -34,6 +43,17 @@
 - [assets/screenshots/](assets/screenshots/) — скриншоты интерфейса
 - [assets/gifs/](assets/gifs/) — GIF и короткие demo-анимации
 - [assets/diagrams/](assets/diagrams/) — схемы, архитектурные диаграммы и визуальные материалы
+
+---
+
+## Команда
+
+| Участник | Роль | Контакты |
+| --- | --- | --- |
+| Бишимбай Бекарыс | капитан и основатель | `pochta@mail.com` |
+| Жексенбаев Арслан | основатель и разработчик | `arslan.zheksenbayev@mail.ru` |
+| Абаев Баязит | основатель и разработчик | `bayazit439@gmail.com` |
+| Тажибаев Марсель | основатель и мотиватор | `Bentenm22@gmail.com` |
 
 ---
 
