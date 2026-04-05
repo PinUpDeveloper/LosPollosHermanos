@@ -19,15 +19,18 @@ public class CampaignService {
     private final CampaignRepository campaignRepository;
     private final InvestmentRepository investmentRepository;
     private final SolanaService solanaService;
+    private final RiskScoringService riskScoringService;
 
     public CampaignService(
             CampaignRepository campaignRepository,
             InvestmentRepository investmentRepository,
-            SolanaService solanaService
+            SolanaService solanaService,
+            RiskScoringService riskScoringService
     ) {
         this.campaignRepository = campaignRepository;
         this.investmentRepository = investmentRepository;
         this.solanaService = solanaService;
+        this.riskScoringService = riskScoringService;
     }
 
     @Transactional
@@ -62,7 +65,19 @@ public class CampaignService {
         saved.setTokenMintAddress(tokenMint);
         saved.setVaultAddress(vault);
 
+        // AI Risk Scoring via Ollama
+        int farmerHistory = campaignRepository.findByFarmerWallet(request.farmerWallet()).size();
+        riskScoringService.scoreRisk(saved, farmerHistory);
+
         return toResponse(campaignRepository.save(saved));
+    }
+
+    @Transactional
+    public CampaignResponse rescoreRisk(Long id) {
+        Campaign campaign = findCampaign(id);
+        int farmerHistory = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet()).size();
+        riskScoringService.scoreRisk(campaign, farmerHistory);
+        return toResponse(campaignRepository.save(campaign));
     }
 
     public List<CampaignResponse> listActiveCampaigns() {
@@ -200,7 +215,9 @@ public class CampaignService {
                 campaign.getTokenMintAddress(),
                 campaign.getVaultAddress(),
                 campaign.getCreatedAt(),
-                campaign.getHarvestDate()
+                campaign.getHarvestDate(),
+                campaign.getRiskScore(),
+                campaign.getRiskExplanation()
         );
     }
 }

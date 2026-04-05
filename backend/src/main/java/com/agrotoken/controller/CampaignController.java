@@ -82,6 +82,12 @@ public class CampaignController {
         return campaignService.markDistributed(id);
     }
 
+    /** Re-calculate AI risk score for a campaign. */
+    @PostMapping("/{id}/rescore")
+    public CampaignResponse rescoreRisk(@PathVariable Long id) {
+        return campaignService.rescoreRisk(id);
+    }
+
     /** Oracle/verifier marks proof-of-asset as verified or rejected. */
     @PostMapping("/{id}/verify-proof")
     public CampaignResponse verifyProof(

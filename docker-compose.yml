@@ -13,12 +13,21 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
 
+  ollama:
+    image: ollama/ollama
+    container_name: agrotoken-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
   backend:
     build:
       context: ./backend
     container_name: agrotoken-backend
     depends_on:
       - postgres
+      - ollama
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/agrotoken
       SPRING_DATASOURCE_USERNAME: agrotoken
@@ -26,9 +35,11 @@ services:
       AGROTOKEN_SOLANA_RPC_URL: https://api.devnet.solana.com
       AGROTOKEN_PROGRAM_ID: Agro111111111111111111111111111111111111111
       AGROTOKEN_ORACLE_WALLET: Oracle11111111111111111111111111111111111
+      OLLAMA_URL: http://ollama:11434
     ports:
       - "8080:8080"
 
 volumes:
   postgres-data:
+  ollama-data:
 

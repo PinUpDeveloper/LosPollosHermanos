@@ -23,7 +23,9 @@ public record CampaignResponse(
         String tokenMintAddress,
         String vaultAddress,
         LocalDateTime createdAt,
-        LocalDateTime harvestDate
+        LocalDateTime harvestDate,
+        Integer riskScore,
+        String riskExplanation
 ) {
 }
 
