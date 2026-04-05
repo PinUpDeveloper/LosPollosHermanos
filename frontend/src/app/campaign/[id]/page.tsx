@@ -86,6 +86,18 @@ export default function CampaignDetailsPage() {
   }
 
   const remaining = campaign.totalSupply - campaign.tokensSold;
+  const trustTone =
+    (campaign.trustScore ?? 0) >= 80
+      ? "bg-emerald-50 text-emerald-700"
+      : (campaign.trustScore ?? 0) >= 60
+        ? "bg-sky-50 text-sky-700"
+        : "bg-orange-50 text-orange-700";
+  const trustLabel =
+    campaign.trustLabel === "HIGH_TRUST"
+      ? "High Trust"
+      : campaign.trustLabel === "MEDIUM_TRUST"
+        ? "Medium Trust"
+        : "Watch Carefully";
 
   return (
     <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
@@ -98,7 +110,7 @@ export default function CampaignDetailsPage() {
           <StatusTimeline current={campaign.status} />
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
+        <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-3xl bg-mist p-5">
             <p className="text-sm text-soil/60">Дата урожая</p>
             <p className="mt-2 text-lg">
@@ -109,6 +121,13 @@ export default function CampaignDetailsPage() {
             <p className="text-sm text-soil/60">Культура</p>
             <p className="mt-2 text-lg">{campaign.cropType}</p>
           </div>
+          {campaign.trustScore !== null && (
+            <div className={`rounded-3xl p-5 ${trustTone}`}>
+              <p className="text-sm text-soil/60">Trust Score</p>
+              <p className="mt-2 text-3xl font-bold">{campaign.trustScore}/100</p>
+              <p className="mt-2 text-sm font-medium">{trustLabel}</p>
+            </div>
+          )}
           {campaign.riskScore !== null && (
             <div
               className={`rounded-3xl p-5 ${
@@ -137,6 +156,21 @@ export default function CampaignDetailsPage() {
             </div>
           )}
         </div>
+
+        {campaign.trustReasons.length > 0 && (
+          <div className="mt-4 rounded-3xl border border-bark/10 bg-mist/50 p-5">
+            <p className="text-xs font-medium uppercase tracking-wider text-soil/50">
+              Why investors can trust this campaign
+            </p>
+            <div className="mt-3 grid gap-2 md:grid-cols-3">
+              {campaign.trustReasons.map((reason) => (
+                <div key={reason} className="rounded-2xl bg-white px-4 py-3 text-sm text-soil/75">
+                  {reason}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Campaign Lifecycle Timeline */}
         <div className="mt-8">

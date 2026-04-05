@@ -18,7 +18,11 @@ import {
 
 async function anchorDiscriminator(name: string): Promise<Buffer> {
   const data = new TextEncoder().encode(`global:${name}`);
-  const hash = await crypto.subtle.digest("SHA-256", data);
+  const source = data.buffer.slice(
+    data.byteOffset,
+    data.byteOffset + data.byteLength
+  ) as ArrayBuffer;
+  const hash = await crypto.subtle.digest("SHA-256", source);
   return Buffer.from(new Uint8Array(hash).slice(0, 8));
 }
 
