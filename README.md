@@ -29,6 +29,8 @@
 ## Документация и материалы
 
 - [docs/](docs/) — текстовая документация проекта
+- [docs/roadmap.md](docs/roadmap.md) — технический roadmap реализации
+- [docs/feature-roadmap.md](docs/feature-roadmap.md) — продуктовый roadmap и demo-фичи
 - [assets/screenshots/](assets/screenshots/) — скриншоты интерфейса
 - [assets/gifs/](assets/gifs/) — GIF и короткие demo-анимации
 - [assets/diagrams/](assets/diagrams/) — схемы, архитектурные диаграммы и визуальные материалы
@@ -126,7 +128,7 @@ tests                Набор Anchor-тестов
 migrations           Скрипты деплоя Anchor
 docker-compose.yml   Конфигурация PostgreSQL, Ollama, Backend
 Anchor.toml          Конфигурация Anchor workspace
-roadmap.md           Строгий план дальнейшей реализации
+docs/                Текстовая документация и roadmap-файлы
 ```
 
 ---
@@ -159,7 +161,7 @@ roadmap.md           Строгий план дальнейшей реализа
 - завершить UX для proof-of-asset
 - стабилизировать demo flow на devnet
 
-Актуальный порядок реализации описан в [roadmap.md](/C:/Users/hp/LosPollosHermanos/roadmap.md).
+Актуальный порядок реализации описан в [docs/roadmap.md](/C:/Users/hp/LosPollosHermanos/docs/roadmap.md).
 
 ---
 
