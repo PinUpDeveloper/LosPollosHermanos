@@ -30,7 +30,19 @@ export type Campaign = {
   trustScore: number | null;
   trustLabel: string | null;
   trustReasons: string[];
+  farmerPassport: FarmerPassport | null;
   lifecycleEvents: CampaignLifecycleEvent[];
+};
+
+export type FarmerPassport = {
+  farmerWallet: string;
+  totalCampaigns: number;
+  successfulCampaigns: number;
+  verifiedProofShare: number;
+  averageTrustScore: number;
+  averageHarvestConfirmationDays: number | null;
+  reliabilityBadge: string;
+  highlights: string[];
 };
 
 export type CampaignLifecycleEvent = {
@@ -76,6 +88,21 @@ const fallbackCampaigns: Campaign[] = [
       "AI risk model sees moderate campaign risk",
       "Campaign already shows early investor traction",
     ],
+    farmerPassport: {
+      farmerWallet: "AskarWallet111",
+      totalCampaigns: 3,
+      successfulCampaigns: 1,
+      verifiedProofShare: 67,
+      averageTrustScore: 71,
+      averageHarvestConfirmationDays: 204,
+      reliabilityBadge: "SILVER",
+      highlights: [
+        "1 completed campaign reached payout distribution",
+        "67% of campaigns have verified proof-of-asset",
+        "Average trust score across campaigns: 71/100",
+        "Average time to harvest confirmation: 204 days",
+      ],
+    },
     lifecycleEvents: [
       {
         type: "CAMPAIGN_CREATED",

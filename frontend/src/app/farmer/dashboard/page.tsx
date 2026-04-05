@@ -12,6 +12,7 @@ import {
   getOrCreateATA,
 } from "@/lib/agrotoken";
 import { StatusTimeline } from "@/components/StatusTimeline";
+import { FarmerPassportCard } from "@/components/FarmerPassportCard";
 
 const PROGRAM_ID = new PublicKey(
   process.env.NEXT_PUBLIC_PROGRAM_ID ?? "Agro111111111111111111111111111111111111111"
@@ -46,6 +47,7 @@ export default function FarmerDashboardPage() {
   const farmerCampaigns = campaigns.filter(
     (c) => publicKey && c.farmerWallet === publicKey.toBase58()
   );
+  const farmerPassport = farmerCampaigns[0]?.farmerPassport ?? null;
 
   async function handleCreate(event: FormEvent) {
     event.preventDefault();
@@ -302,6 +304,9 @@ export default function FarmerDashboardPage() {
       </div>
 
       <section className="space-y-4">
+        {farmerPassport && (
+          <FarmerPassportCard passport={farmerPassport} title="My Farmer Passport" />
+        )}
         <h2 className="font-display text-2xl">Мои кампании</h2>
         {farmerCampaigns.length === 0 && (
           <p className="text-sm text-soil/60">
