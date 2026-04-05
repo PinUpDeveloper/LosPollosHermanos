@@ -1,6 +1,7 @@
 package com.agrotoken.service;
 
 import com.agrotoken.dto.CampaignResponse;
+import com.agrotoken.dto.CampaignLifecycleEventResponse;
 import com.agrotoken.dto.ConfirmHarvestRequest;
 import com.agrotoken.dto.CreateCampaignRequest;
 import com.agrotoken.dto.HolderResponse;
@@ -11,6 +12,7 @@ import com.agrotoken.repository.InvestmentRepository;
 import com.agrotoken.service.TrustScoringService.TrustScoreResult;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -115,6 +117,7 @@ public class CampaignService {
     public CampaignResponse confirmHarvest(Long id, ConfirmHarvestRequest request) {
         Campaign campaign = findCampaign(id);
         campaign.setStatus("HARVEST_SOLD");
+        campaign.setHarvestConfirmedAt(LocalDateTime.now());
         return toResponse(campaignRepository.save(campaign));
     }
 
@@ -149,9 +152,17 @@ public class CampaignService {
     @Transactional
     public CampaignResponse recordTokensPurchased(Long id, long amount) {
         Campaign campaign = findCampaign(id);
-        campaign.setTokensSold(campaign.getTokensSold() + amount);
-        if (campaign.getTokensSold() >= campaign.getTotalSupply()) {
+        long previousSold = campaign.getTokensSold();
+        long updatedSold = previousSold + amount;
+        campaign.setTokensSold(updatedSold);
+
+        markFundingMilestones(campaign, previousSold, updatedSold);
+
+        if (updatedSold >= campaign.getTotalSupply()) {
             campaign.setStatus("FUNDED");
+            if (campaign.getFunded100At() == null) {
+                campaign.setFunded100At(LocalDateTime.now());
+            }
         }
         return toResponse(campaignRepository.save(campaign));
     }
@@ -175,7 +186,29 @@ public class CampaignService {
     public CampaignResponse markDistributed(Long id) {
         Campaign campaign = findCampaign(id);
         campaign.setStatus("DISTRIBUTED");
+        campaign.setDistributedAt(LocalDateTime.now());
         return toResponse(campaignRepository.save(campaign));
+    }
+
+    private void markFundingMilestones(Campaign campaign, long previousSold, long updatedSold) {
+        long totalSupply = campaign.getTotalSupply();
+        if (totalSupply <= 0) {
+            return;
+        }
+
+        double previousRatio = (double) previousSold / totalSupply;
+        double updatedRatio = (double) updatedSold / totalSupply;
+        LocalDateTime now = LocalDateTime.now();
+
+        if (campaign.getFunded25At() == null && previousRatio < 0.25 && updatedRatio >= 0.25) {
+            campaign.setFunded25At(now);
+        }
+        if (campaign.getFunded50At() == null && previousRatio < 0.50 && updatedRatio >= 0.50) {
+            campaign.setFunded50At(now);
+        }
+        if (campaign.getFunded100At() == null && previousRatio < 1.0 && updatedRatio >= 1.0) {
+            campaign.setFunded100At(now);
+        }
     }
 
     private TransactionContextResponse buildContext(Campaign campaign, String message) {
@@ -227,7 +260,102 @@ public class CampaignService {
                 campaign.getRiskExplanation(),
                 trustScore.trustScore(),
                 trustScore.trustLabel(),
-                trustScore.trustReasons()
+                trustScore.trustReasons(),
+                buildLifecycleEvents(campaign)
         );
+    }
+
+    private List<CampaignLifecycleEventResponse> buildLifecycleEvents(Campaign campaign) {
+        List<CampaignLifecycleEventResponse> events = new ArrayList<>();
+
+        events.add(new CampaignLifecycleEventResponse(
+                "CAMPAIGN_CREATED",
+                "Campaign created",
+                "The farmer created the campaign and the on-chain lifecycle started.",
+                campaign.getCreatedAt(),
+                campaign.getCreatedAt() != null,
+                campaign.getFarmerWallet(),
+                campaign.getOnChainAddress(),
+                campaign.getOnChainAddress()
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "PROOF_UPLOADED",
+                "Proof uploaded",
+                "Proof-of-asset document was attached and its hash was linked to the campaign.",
+                campaign.getProofUploadedAt(),
+                campaign.getProofUploadedAt() != null,
+                campaign.getFarmerWallet(),
+                campaign.getOnChainAddress(),
+                campaign.getProofHash()
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "PROOF_VERIFIED",
+                "Oracle verified proof",
+                "The oracle or verifier confirmed that the uploaded proof matches the real-world asset.",
+                campaign.getProofVerifiedAt(),
+                "VERIFIED".equals(campaign.getProofStatus()),
+                campaign.getProofVerifierWallet(),
+                campaign.getProofVerifierWallet(),
+                campaign.getProofHash()
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "FUNDED_25",
+                "25% funded",
+                "The campaign passed the first investor traction milestone.",
+                campaign.getFunded25At(),
+                campaign.getFunded25At() != null,
+                null,
+                campaign.getOnChainAddress(),
+                "25%"
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "FUNDED_50",
+                "50% funded",
+                "The campaign reached the midpoint of its funding target.",
+                campaign.getFunded50At(),
+                campaign.getFunded50At() != null,
+                null,
+                campaign.getOnChainAddress(),
+                "50%"
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "FUNDED_100",
+                "100% funded",
+                "The campaign fully sold its tokenized funding allocation.",
+                campaign.getFunded100At(),
+                campaign.getFunded100At() != null,
+                null,
+                campaign.getOnChainAddress(),
+                "100%"
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "HARVEST_CONFIRMED",
+                "Harvest confirmed",
+                "The harvest result was confirmed and the campaign moved toward payout.",
+                campaign.getHarvestConfirmedAt(),
+                campaign.getHarvestConfirmedAt() != null,
+                campaign.getFarmerWallet(),
+                campaign.getOnChainAddress(),
+                null
+        ));
+
+        events.add(new CampaignLifecycleEventResponse(
+                "PAYOUT_DISTRIBUTED",
+                "Payout distributed",
+                "Revenue distribution for token holders was finalized.",
+                campaign.getDistributedAt(),
+                campaign.getDistributedAt() != null,
+                campaign.getFarmerWallet(),
+                campaign.getOnChainAddress(),
+                campaign.getVaultAddress()
+        ));
+
+        return events;
     }
 }
