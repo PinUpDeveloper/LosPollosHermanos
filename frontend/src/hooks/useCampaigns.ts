@@ -25,6 +25,8 @@ export type Campaign = {
   vaultAddress: string;
   createdAt: string;
   harvestDate: string;
+  riskScore: number | null;
+  riskExplanation: string | null;
 };
 
 const fallbackCampaigns: Campaign[] = [
@@ -50,6 +52,8 @@ const fallbackCampaigns: Campaign[] = [
     vaultAddress: "",
     createdAt: "2026-01-15T00:00:00",
     harvestDate: "2026-09-15T00:00:00",
+    riskScore: 35,
+    riskExplanation: "Умеренный риск: пшеница — стабильная культура, но Акмолинская область подвержена засухам в летний период.",
   },
 ];
 

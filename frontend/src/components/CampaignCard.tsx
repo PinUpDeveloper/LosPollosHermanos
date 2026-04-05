@@ -1,6 +1,22 @@
 import Link from "next/link";
 import { Campaign } from "@/hooks/useCampaigns";
 
+function RiskBadge({ score }: { score: number | null }) {
+  if (score === null) return null;
+  const level = score <= 33 ? "Low" : score <= 66 ? "Medium" : "High";
+  const color =
+    score <= 33
+      ? "bg-green-100 text-green-700"
+      : score <= 66
+        ? "bg-yellow-100 text-yellow-700"
+        : "bg-red-100 text-red-700";
+  return (
+    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${color}`}>
+      {level} {score}
+    </span>
+  );
+}
+
 export function CampaignCard({ campaign }: { campaign: Campaign }) {
   const progress = Math.round((campaign.tokensSold / campaign.totalSupply) * 100);
 
@@ -11,7 +27,10 @@ export function CampaignCard({ campaign }: { campaign: Campaign }) {
           <p className="text-sm uppercase tracking-[0.2em] text-bark">{campaign.region}</p>
           <h3 className="font-display text-2xl">{campaign.title}</h3>
         </div>
-        <span className="rounded-full bg-wheat/20 px-3 py-1 text-sm">{campaign.cropType}</span>
+        <div className="flex items-center gap-2">
+          <RiskBadge score={campaign.riskScore} />
+          <span className="rounded-full bg-wheat/20 px-3 py-1 text-sm">{campaign.cropType}</span>
+        </div>
       </div>
       <p className="mb-4 text-sm text-soil/75">{campaign.description}</p>
       <div className="mb-2 flex justify-between text-sm">

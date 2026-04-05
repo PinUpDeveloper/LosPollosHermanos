@@ -98,7 +98,7 @@ export default function CampaignDetailsPage() {
           <StatusTimeline current={campaign.status} />
         </div>
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2">
+        <div className="mt-8 grid gap-4 md:grid-cols-3">
           <div className="rounded-3xl bg-mist p-5">
             <p className="text-sm text-soil/60">Дата урожая</p>
             <p className="mt-2 text-lg">
@@ -109,6 +109,33 @@ export default function CampaignDetailsPage() {
             <p className="text-sm text-soil/60">Культура</p>
             <p className="mt-2 text-lg">{campaign.cropType}</p>
           </div>
+          {campaign.riskScore !== null && (
+            <div
+              className={`rounded-3xl p-5 ${
+                campaign.riskScore <= 33
+                  ? "bg-green-50"
+                  : campaign.riskScore <= 66
+                    ? "bg-yellow-50"
+                    : "bg-red-50"
+              }`}
+            >
+              <p className="text-sm text-soil/60">AI Risk Score</p>
+              <p
+                className={`mt-2 text-3xl font-bold ${
+                  campaign.riskScore <= 33
+                    ? "text-green-600"
+                    : campaign.riskScore <= 66
+                      ? "text-yellow-600"
+                      : "text-red-600"
+                }`}
+              >
+                {campaign.riskScore}/100
+              </p>
+              {campaign.riskExplanation && (
+                <p className="mt-2 text-sm text-soil/70">{campaign.riskExplanation}</p>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Campaign Lifecycle Timeline */}

@@ -35,5 +35,7 @@ public class Campaign {
     private String vaultAddress;
     private LocalDateTime createdAt;
     private LocalDateTime harvestDate;
+    private Integer riskScore;
+    private String riskExplanation;
 }
 
