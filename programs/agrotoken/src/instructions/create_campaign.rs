@@ -18,6 +18,7 @@ pub struct CreateCampaign<'info> {
         bump
     )]
     pub campaign: Account<'info, Campaign>,
+    #[account(constraint = usdc_mint.decimals == 6 @ AgroTokenError::InvalidUsdcMint)]
     pub usdc_mint: Account<'info, Mint>,
     #[account(
         init,
@@ -40,7 +41,6 @@ pub struct CreateCampaign<'info> {
     pub vault: Account<'info, TokenAccount>,
     pub system_program: Program<'info, System>,
     pub token_program: Program<'info, Token>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(
@@ -53,7 +53,6 @@ pub fn handler(
             && input.description.as_bytes().len() <= DESCRIPTION_MAX_LEN,
         AgroTokenError::MetadataTooLong
     );
-    require!(ctx.accounts.usdc_mint.decimals == 6, AgroTokenError::InvalidUsdcMint);
 
     let campaign = &mut ctx.accounts.campaign;
     campaign.farmer = ctx.accounts.farmer.key();
@@ -73,4 +72,3 @@ pub fn handler(
     campaign.bump = ctx.bumps.campaign;
     Ok(())
 }
-

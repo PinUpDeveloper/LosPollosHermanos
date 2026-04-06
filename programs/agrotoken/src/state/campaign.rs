@@ -23,24 +23,22 @@ pub struct Campaign {
 }
 
 impl Campaign {
-    pub const SPACE: usize = 8
-        + 32
-        + 32
-        + 8
-        + 4
-        + TITLE_MAX_LEN
-        + 4
-        + DESCRIPTION_MAX_LEN
-        + 8
-        + 8
-        + 8
-        + 32
-        + 32
-        + 1
-        + 8
-        + 32
-        + 8
-        + 1;
+    pub const SPACE: usize = 8  // discriminator
+        + 32  // farmer
+        + 32  // oracle
+        + 8   // campaign_id
+        + 4 + TITLE_MAX_LEN       // title (String)
+        + 4 + DESCRIPTION_MAX_LEN // description (String)
+        + 8   // total_supply
+        + 8   // tokens_sold
+        + 8   // price_per_token
+        + 32  // vault
+        + 32  // token_mint
+        + 1   // status
+        + 8   // harvest_total_usdc
+        + 32  // proof_hash
+        + 8   // created_at
+        + 1;  // bump
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
@@ -49,6 +47,7 @@ pub enum CampaignStatus {
     Funded,
     HarvestSold,
     Distributed,
+    Completed,
     Cancelled,
 }
 
@@ -61,4 +60,3 @@ pub struct CreateCampaignInput {
     pub price_per_token: u64,
     pub proof_hash: [u8; 32],
 }
-

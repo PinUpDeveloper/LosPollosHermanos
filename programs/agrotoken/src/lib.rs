@@ -40,4 +40,3 @@ pub mod agrotoken {
         instructions::cancel::handler(ctx)
     }
 }
-

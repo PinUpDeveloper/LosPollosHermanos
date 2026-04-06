@@ -7,16 +7,12 @@ use crate::state::{Campaign, CampaignStatus};
 pub struct CancelCampaign<'info> {
     #[account(mut)]
     pub farmer: Signer<'info>,
-    #[account(mut)]
+    #[account(mut, has_one = farmer)]
     pub campaign: Account<'info, Campaign>,
 }
 
 pub fn handler(ctx: Context<CancelCampaign>) -> Result<()> {
     let campaign = &mut ctx.accounts.campaign;
-    require!(
-        ctx.accounts.farmer.key() == campaign.farmer,
-        AgroTokenError::Unauthorized
-    );
     require!(
         campaign.status == CampaignStatus::Active,
         AgroTokenError::InvalidCancelState

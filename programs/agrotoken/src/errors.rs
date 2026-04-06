@@ -33,4 +33,3 @@ pub enum AgroTokenError {
     #[msg("Holder authority must sign and own the share token account")]
     InvalidHolderAuthority,
 }
-

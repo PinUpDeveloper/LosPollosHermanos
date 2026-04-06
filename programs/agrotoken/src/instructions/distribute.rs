@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{transfer, Token, TokenAccount, Transfer};
+use anchor_spl::token::{transfer, Mint, Token, TokenAccount, Transfer};
 
 use crate::errors::AgroTokenError;
 use crate::state::{Campaign, CampaignStatus};
@@ -8,9 +8,14 @@ use crate::state::{Campaign, CampaignStatus};
 pub struct Distribute<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut, has_one = vault, has_one = token_mint)]
+    #[account(
+        mut,
+        has_one = vault,
+        has_one = token_mint,
+        constraint = authority.key() == campaign.farmer || authority.key() == campaign.oracle @ AgroTokenError::Unauthorized
+    )]
     pub campaign: Account<'info, Campaign>,
-    pub token_mint: Account<'info, anchor_spl::token::Mint>,
+    pub token_mint: Account<'info, Mint>,
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
     pub token_program: Program<'info, Token>,
@@ -18,12 +23,7 @@ pub struct Distribute<'info> {
 
 pub fn handler(ctx: Context<Distribute>) -> Result<()> {
     let campaign = &mut ctx.accounts.campaign;
-    let authority = ctx.accounts.authority.key();
 
-    require!(
-        authority == campaign.farmer || authority == campaign.oracle,
-        AgroTokenError::Unauthorized
-    );
     require!(
         campaign.status == CampaignStatus::HarvestSold,
         AgroTokenError::CampaignNotReadyForDistribution
@@ -46,9 +46,12 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
         &[campaign.bump],
     ];
 
-    for accounts in ctx.remaining_accounts.chunks_exact(2) {
-        let holder_token_account: Account<TokenAccount> = Account::try_from(&accounts[0])?;
-        let holder_usdc_account: Account<TokenAccount> = Account::try_from(&accounts[1])?;
+    let remaining = ctx.remaining_accounts;
+    let mut i = 0;
+    while i < remaining.len() {
+        let holder_token_account: Account<TokenAccount> = Account::try_from(&remaining[i])?;
+        let holder_usdc_account: Account<TokenAccount> = Account::try_from(&remaining[i + 1])?;
+        i += 2;
 
         require!(
             holder_token_account.mint == token_mint_key,
@@ -91,4 +94,3 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
     campaign.status = CampaignStatus::Distributed;
     Ok(())
 }
-
