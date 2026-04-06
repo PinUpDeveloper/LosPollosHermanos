@@ -5,6 +5,7 @@ pub mod instructions;
 pub mod state;
 
 use instructions::*;
+use state::CreateCampaignInput;
 
 declare_id!("Agro111111111111111111111111111111111111111");
 

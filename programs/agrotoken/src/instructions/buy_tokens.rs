@@ -35,21 +35,24 @@ pub struct BuyTokens<'info> {
 
 pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
     require!(amount > 0, AgroTokenError::InvalidAmount);
-
-    let campaign = &mut ctx.accounts.campaign;
     require!(
-        campaign.status == CampaignStatus::Active,
+        ctx.accounts.campaign.status == CampaignStatus::Active,
         AgroTokenError::CampaignNotActive
     );
 
-    let updated_sold = campaign
+    let updated_sold = ctx
+        .accounts
+        .campaign
         .tokens_sold
         .checked_add(amount)
         .ok_or(AgroTokenError::MathOverflow)?;
-    require!(updated_sold <= campaign.total_supply, AgroTokenError::SupplyExceeded);
+    require!(
+        updated_sold <= ctx.accounts.campaign.total_supply,
+        AgroTokenError::SupplyExceeded
+    );
 
     let payment = amount
-        .checked_mul(campaign.price_per_token)
+        .checked_mul(ctx.accounts.campaign.price_per_token)
         .ok_or(AgroTokenError::MathOverflow)?;
 
     transfer(
@@ -65,10 +68,10 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
     )?;
 
     let seeds = &[
-        b"campaign",
-        campaign.farmer.as_ref(),
-        &campaign.campaign_id.to_le_bytes(),
-        &[campaign.bump],
+        b"campaign".as_ref(),
+        ctx.accounts.campaign.farmer.as_ref(),
+        &ctx.accounts.campaign.campaign_id.to_le_bytes(),
+        &[ctx.accounts.campaign.bump],
     ];
 
     mint_to(
@@ -84,9 +87,9 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
         amount,
     )?;
 
-    campaign.tokens_sold = updated_sold;
-    if campaign.tokens_sold == campaign.total_supply {
-        campaign.status = CampaignStatus::Funded;
+    ctx.accounts.campaign.tokens_sold = updated_sold;
+    if ctx.accounts.campaign.tokens_sold == ctx.accounts.campaign.total_supply {
+        ctx.accounts.campaign.status = CampaignStatus::Funded;
     }
 
     Ok(())

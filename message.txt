@@ -1,0 +1,218 @@
+klot@DESKTOP-BU9JDUA:/mnt/e/LosPollosHermanos$ anchor build && anchor 
+keys list
+WARNING: `anchor-lang` version(0.30.1) and the current CLI version(1.0.0) don't match.
+
+        This can lead to unwanted behavior. To use the same CLI version, add:
+
+        [toolchain]
+        anchor_version = "0.30.1"
+
+        to Anchor.toml
+
+   Compiling agrotoken v0.1.0 (/mnt/e/LosPollosHermanos/programs/agrotoken)
+error[E0412]: cannot find type `CreateCampaignInput` in this scope    
+  --> src/lib.rs:18:16
+   |
+18 |         input: CreateCampaignInput,
+   |                ^^^^^^^^^^^^^^^^^^^
+   |
+  ::: src/instructions/create_campaign.rs:10:1
+   |
+10 | pub struct CreateCampaign<'info> {
+   | -------------------------------- similarly named struct `CreateCampaign` defined here
+   |
+help: a struct with a similar name exists
+   |
+18 -         input: CreateCampaignInput,
+18 +         input: CreateCampaign,
+   |
+help: consider importing this struct through its public re-export     
+   |
+13 +     use crate::state::CreateCampaignInput;
+   |
+
+error[E0412]: cannot find type `CreateCampaignInput` in this scope    
+  --> src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^ not found in this scope
+   |
+   = help: consider importing this struct through its public re-export:
+           crate::state::CreateCampaignInput
+   = note: this error originates in the attribute macro `program` (in 
+Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-heap`
+  --> src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_heap_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_heap_default` may come from an old version of the `solana_program` crate, try updating your dependency 
+with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: `#[warn(unexpected_cfgs)]` on by default
+   = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)      
+
+warning: unexpected `cfg` condition value: `custom-panic`
+  --> src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `$crate::custom_panic_default` crate for guidance on how handle this unexpected cfg
+   = help: the macro `$crate::custom_panic_default` may come from an old version of the `solana_program` crate, try updating your dependency with `cargo update -p solana_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)     
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/burn_tokens.rs:7:10
+  |
+7 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/buy_tokens.rs:7:10
+  |
+7 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/cancel.rs:6:10
+  |
+6 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/confirm_harvest.rs:6:10
+  |
+6 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/create_campaign.rs:8:10
+  |
+8 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> src/instructions/distribute.rs:7:10
+  |
+7 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+  = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+  = help: the derive macro `Accounts` may come from an old version of 
+the `anchor_derive_accounts` crate, try updating your dependency with 
+`cargo update -p anchor_derive_accounts`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: ambiguous glob re-exports
+  --> src/instructions/mod.rs:8:9
+   |
+8  | pub use burn_tokens::*;
+   |         ^^^^^^^^^^^^^^ the name `handler` in the value namespace 
+is first re-exported here
+...
+13 | pub use distribute::*;
+   |         ------------- but the name `handler` in the value namespace is also re-exported here
+   |
+   = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a attribute macro will use the cfgs from the destination crate and not the ones from the defining crate       
+   = help: try referring to `program` crate for guidance on how handle this unexpected cfg
+   = help: the attribute macro `program` may come from an old version 
+of the `anchor_attribute_program` crate, try updating your dependency 
+with `cargo update -p anchor_attribute_program`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> src/lib.rs:11:1
+   |
+11 | #[program]
+   | ^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = note: using a cfg inside a derive macro will use the cfgs from the destination crate and not the ones from the defining crate
+   = help: try referring to `Accounts` crate for guidance on how handle this unexpected cfg
+   = help: the derive macro `Accounts` may come from an old version of the `anchor_derive_accounts` crate, try updating your dependency with `cargo update -p anchor_derive_accounts`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in 
+Nightly builds, run with -Z macro-backtrace for more info)
+
+error[E0502]: cannot borrow `ctx.accounts.campaign` as immutable because it is also borrowed as mutable
+  --> src/instructions/buy_tokens.rs:80:28
+   |
+39 |     let campaign = &mut ctx.accounts.campaign;
+   |                    -------------------------- mutable borrow occurs here
+...
+80 |                 authority: ctx.accounts.campaign.to_account_in...   |                            ^^^^^^^^^^^^^^^^^^^^^ immutable borrow occurs here
+...
+87 |     campaign.tokens_sold = updated_sold;
+   |     -------- mutable borrow later used here
+
+Some errors have detailed explanations: E0412, E0502.
+For more information about an error, try `rustc --explain E0412`.     
+warning: `agrotoken` (lib) generated 16 warnings (5 duplicates)       
+error: could not compile `agrotoken` (lib) due to 3 previous errors; 16 warnings emitted
