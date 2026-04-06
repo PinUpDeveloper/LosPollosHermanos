@@ -14,9 +14,17 @@ pub struct BuyTokens<'info> {
         has_one = vault
     )]
     pub campaign: Account<'info, Campaign>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = investor_usdc_account.owner == investor.key() @ AgroTokenError::Unauthorized,
+        constraint = investor_usdc_account.mint == vault.mint @ AgroTokenError::InvalidUsdcMint
+    )]
     pub investor_usdc_account: Account<'info, TokenAccount>,
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint = investor_token_account.owner == investor.key() @ AgroTokenError::Unauthorized,
+        constraint = investor_token_account.mint == token_mint.key() @ AgroTokenError::InvalidHolderTokenAccount
+    )]
     pub investor_token_account: Account<'info, TokenAccount>,
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
@@ -83,4 +91,3 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
 
     Ok(())
 }
-

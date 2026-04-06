@@ -8,23 +8,20 @@ use crate::state::{Campaign, CampaignStatus};
 pub struct BurnTokens<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut, has_one = token_mint)]
+    #[account(
+        mut,
+        has_one = token_mint,
+        constraint = authority.key() == campaign.farmer || authority.key() == campaign.oracle @ AgroTokenError::Unauthorized
+    )]
     pub campaign: Account<'info, Campaign>,
     #[account(mut)]
     pub token_mint: Account<'info, Mint>,
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
-    let campaign = &ctx.accounts.campaign;
-    let authority = ctx.accounts.authority.key();
-
+pub fn handler<'info>(ctx: Context<'_, '_, 'info, 'info, BurnTokens<'info>>) -> Result<()> {
     require!(
-        authority == campaign.farmer || authority == campaign.oracle,
-        AgroTokenError::Unauthorized
-    );
-    require!(
-        campaign.status == CampaignStatus::Distributed,
+        ctx.accounts.campaign.status == CampaignStatus::Distributed,
         AgroTokenError::CampaignNotReadyForDistribution
     );
     require!(
@@ -38,9 +35,12 @@ pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
 
     let token_mint_key = ctx.accounts.token_mint.key();
 
-    for accounts in ctx.remaining_accounts.chunks_exact(2) {
-        let holder_token_account: Account<TokenAccount> = Account::try_from(&accounts[0])?;
-        let holder_authority = &accounts[1];
+    let remaining = ctx.remaining_accounts;
+    let mut i = 0;
+    while i < remaining.len() {
+        let holder_token_account: Account<'info, TokenAccount> = Account::try_from(&remaining[i])?;
+        let holder_authority = &remaining[i + 1];
+        i += 2;
 
         require!(
             holder_token_account.mint == token_mint_key,
@@ -78,6 +78,6 @@ pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
         ))?;
     }
 
+    ctx.accounts.campaign.status = CampaignStatus::Completed;
     Ok(())
 }
-
