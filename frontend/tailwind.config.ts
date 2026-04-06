@@ -5,20 +5,19 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        soil: "#55331A",
-        wheat: "#D8A84D",
-        leaf: "#355E3B",
-        mist: "#F8F1E7",
-        bark: "#8D6A45"
+        soil: "#1f2a23",
+        wheat: "#b38a54",
+        leaf: "#4f6652",
+        mist: "#f3eee6",
+        bark: "#8a7a67",
       },
       fontFamily: {
-        display: ["Georgia", "serif"],
-        body: ["'Trebuchet MS'", "sans-serif"]
-      }
-    }
+        display: ["'Aptos'", "'Segoe UI'", "'Helvetica Neue'", "sans-serif"],
+        body: ["'Aptos'", "'Segoe UI'", "'Helvetica Neue'", "sans-serif"],
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 };
 
 export default config;
-
