@@ -19,11 +19,9 @@ pub struct BurnTokens<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
-    let campaign = &mut ctx.accounts.campaign;
-
+pub fn handler<'info>(ctx: Context<'_, '_, 'info, 'info, BurnTokens<'info>>) -> Result<()> {
     require!(
-        campaign.status == CampaignStatus::Distributed,
+        ctx.accounts.campaign.status == CampaignStatus::Distributed,
         AgroTokenError::CampaignNotReadyForDistribution
     );
     require!(
@@ -40,7 +38,7 @@ pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
     let remaining = ctx.remaining_accounts;
     let mut i = 0;
     while i < remaining.len() {
-        let holder_token_account: Account<TokenAccount> = Account::try_from(&remaining[i])?;
+        let holder_token_account: Account<'info, TokenAccount> = Account::try_from(&remaining[i])?;
         let holder_authority = &remaining[i + 1];
         i += 2;
 
@@ -80,6 +78,6 @@ pub fn handler(ctx: Context<BurnTokens>) -> Result<()> {
         ))?;
     }
 
-    campaign.status = CampaignStatus::Completed;
+    ctx.accounts.campaign.status = CampaignStatus::Completed;
     Ok(())
 }

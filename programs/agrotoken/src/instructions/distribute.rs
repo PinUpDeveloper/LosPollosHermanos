@@ -21,11 +21,9 @@ pub struct Distribute<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<Distribute>) -> Result<()> {
-    let campaign = &mut ctx.accounts.campaign;
-
+pub fn handler<'info>(ctx: Context<'_, '_, 'info, 'info, Distribute<'info>>) -> Result<()> {
     require!(
-        campaign.status == CampaignStatus::HarvestSold,
+        ctx.accounts.campaign.status == CampaignStatus::HarvestSold,
         AgroTokenError::CampaignNotReadyForDistribution
     );
     require!(
@@ -39,8 +37,9 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
 
     let token_mint_key = ctx.accounts.token_mint.key();
     let vault_mint = ctx.accounts.vault.mint;
+    let campaign = &ctx.accounts.campaign;
     let seeds = &[
-        b"campaign",
+        b"campaign".as_ref(),
         campaign.farmer.as_ref(),
         &campaign.campaign_id.to_le_bytes(),
         &[campaign.bump],
@@ -49,8 +48,8 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
     let remaining = ctx.remaining_accounts;
     let mut i = 0;
     while i < remaining.len() {
-        let holder_token_account: Account<TokenAccount> = Account::try_from(&remaining[i])?;
-        let holder_usdc_account: Account<TokenAccount> = Account::try_from(&remaining[i + 1])?;
+        let holder_token_account: Account<'info, TokenAccount> = Account::try_from(&remaining[i])?;
+        let holder_usdc_account: Account<'info, TokenAccount> = Account::try_from(&remaining[i + 1])?;
         i += 2;
 
         require!(
@@ -72,9 +71,9 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
 
         let payout = holder_token_account
             .amount
-            .checked_mul(campaign.harvest_total_usdc)
+            .checked_mul(ctx.accounts.campaign.harvest_total_usdc)
             .ok_or(AgroTokenError::MathOverflow)?
-            .checked_div(campaign.total_supply)
+            .checked_div(ctx.accounts.campaign.total_supply)
             .ok_or(AgroTokenError::MathOverflow)?;
 
         transfer(
@@ -83,7 +82,7 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
                 Transfer {
                     from: ctx.accounts.vault.to_account_info(),
                     to: holder_usdc_account.to_account_info(),
-                    authority: campaign.to_account_info(),
+                    authority: ctx.accounts.campaign.to_account_info(),
                 },
                 &[seeds],
             ),
@@ -91,6 +90,6 @@ pub fn handler(ctx: Context<Distribute>) -> Result<()> {
         )?;
     }
 
-    campaign.status = CampaignStatus::Distributed;
+    ctx.accounts.campaign.status = CampaignStatus::Distributed;
     Ok(())
 }

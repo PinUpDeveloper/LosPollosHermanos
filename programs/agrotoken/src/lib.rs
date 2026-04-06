@@ -28,11 +28,11 @@ pub mod agrotoken {
         instructions::confirm_harvest::handler(ctx, harvest_total_usdc)
     }
 
-    pub fn distribute(ctx: Context<Distribute>) -> Result<()> {
+    pub fn distribute<'info>(ctx: Context<'_, '_, 'info, 'info, Distribute<'info>>) -> Result<()> {
         instructions::distribute::handler(ctx)
     }
 
-    pub fn burn_tokens(ctx: Context<BurnTokens>) -> Result<()> {
+    pub fn burn_tokens<'info>(ctx: Context<'_, '_, 'info, 'info, BurnTokens<'info>>) -> Result<()> {
         instructions::burn_tokens::handler(ctx)
     }
 
