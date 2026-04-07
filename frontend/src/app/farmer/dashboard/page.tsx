@@ -14,9 +14,11 @@ import {
   getOrCreateATA,
 } from "@/lib/agrotoken";
 import { useI18n } from "@/lib/i18n";
+import { useAgroProgram } from "@/hooks/useAgroProgram";
+import { BN } from "@coral-xyz/anchor";
 
 const PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_PROGRAM_ID ?? "Agro111111111111111111111111111111111111111",
+  process.env.NEXT_PUBLIC_PROGRAM_ID ?? "GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY",
 );
 const USDC_MINT = new PublicKey(
   process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
@@ -144,11 +146,13 @@ export default function FarmerDashboardPage() {
   const farmerCampaigns = campaigns.filter((campaign) => publicKey && campaign.farmerWallet === publicKey.toBase58());
   const farmerPassport = farmerCampaigns[0]?.farmerPassport ?? null;
 
+  const { program, getCampaignPdAs } = useAgroProgram();
+
   async function handleCreate(event: FormEvent) {
     event.preventDefault();
     setError("");
 
-    if (!publicKey) {
+    if (!publicKey || !program) {
       setError(text.walletError);
       return;
     }
@@ -186,22 +190,32 @@ export default function FarmerDashboardPage() {
         hashBytes[i / 2] = parseInt(hexHash.substring(i, i + 2), 16);
       }
 
-      const { tx } = await buildCreateCampaignTx({
-        farmer: publicKey,
-        oracle: ORACLE,
-        usdcMint: USDC_MINT,
-        programId: PROGRAM_ID,
-        campaignId,
-        title,
-        description: description || text.defaultDescription,
-        totalSupply: parsedTotalSupply,
-        pricePerToken: parsedPricePerToken * 1_000_000,
-        proofHash: hashBytes,
-      });
+      const { campaignPda, tokenMint, vault } = getCampaignPdAs(publicKey, campaignId);
 
-      const signature = await sendTransaction(tx, connection);
+      const signature = await program.methods
+        .createCampaign(new BN(campaignId), {
+          oracle: ORACLE,
+          title,
+          description: description || text.defaultDescription,
+          totalSupply: new BN(parsedTotalSupply),
+          pricePerToken: new BN(parsedPricePerToken * 1_000_000),
+          proofHash: Array.from(hashBytes),
+        })
+        .accounts({
+          farmer: publicKey,
+          usdcMint: USDC_MINT,
+        })
+        .rpc();
+
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
+
+      // Важно: сообщаем бэкенду реальные адреса, которые мы только что создали
+      await api.patch(`/campaigns/${campaignId}`, {
+        onChainAddress: campaignPda.toBase58(),
+        tokenMintAddress: tokenMint.toBase58(),
+        vaultAddress: vault.toBase58(),
+      });
 
       setTitle("");
       setDescription("");
@@ -218,7 +232,7 @@ export default function FarmerDashboardPage() {
   }
 
   async function handleConfirmHarvest(campaign: Campaign) {
-    if (!publicKey) return;
+    if (!publicKey || !program) return;
     setError("");
     setBusy(`confirm-${campaign.id}`);
     try {
@@ -226,15 +240,16 @@ export default function FarmerDashboardPage() {
       if (!revenue) return;
       const harvestUsdc = Math.floor(parseFloat(revenue) * 1_000_000);
 
-      const ix = await buildConfirmHarvestIx({
-        authority: publicKey,
-        campaignPda: new PublicKey(campaign.onChainAddress),
-        programId: PROGRAM_ID,
-        harvestTotalUsdc: harvestUsdc,
-      });
+      const { campaignPda } = getCampaignPdAs(new PublicKey(campaign.farmerWallet), campaign.id);
 
-      const tx = new Transaction().add(ix);
-      const signature = await sendTransaction(tx, connection);
+      const signature = await program.methods
+        .confirmHarvest(new BN(harvestUsdc))
+        .accounts({
+          authority: publicKey,
+          campaign: campaignPda,
+        })
+        .rpc();
+
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
 
@@ -252,7 +267,7 @@ export default function FarmerDashboardPage() {
   }
 
   async function handleDistribute(campaign: Campaign) {
-    if (!publicKey) return;
+    if (!publicKey || !program) return;
     setError("");
     setBusy(`distribute-${campaign.id}`);
     try {
@@ -260,30 +275,33 @@ export default function FarmerDashboardPage() {
         `/campaigns/${campaign.id}/holders`,
       );
 
-      const tokenMint = new PublicKey(campaign.tokenMintAddress);
-      const holders = [];
+      const { campaignPda, tokenMint, vault } = getCampaignPdAs(
+        new PublicKey(campaign.farmerWallet),
+        campaign.id
+      );
+
+      const remainingAccounts = [];
 
       for (const holder of holdersResponse.data) {
         const holderPk = new PublicKey(holder.investorWallet);
-        const tokenAta = await getOrCreateATA(connection, publicKey, tokenMint, holderPk);
-        const usdcAta = await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk);
-        holders.push({
-          tokenAccount: tokenAta.address,
-          usdcAccount: usdcAta.address,
-        });
+        const tokenAta = (await getOrCreateATA(connection, publicKey, tokenMint, holderPk)).address;
+        const usdcAta = (await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk)).address;
+
+        remainingAccounts.push({ pubkey: tokenAta, isSigner: false, isWritable: true });
+        remainingAccounts.push({ pubkey: usdcAta, isSigner: false, isWritable: true });
       }
 
-      const ix = await buildDistributeIx({
-        authority: publicKey,
-        campaignPda: new PublicKey(campaign.onChainAddress),
-        tokenMint,
-        vault: new PublicKey(campaign.vaultAddress),
-        programId: PROGRAM_ID,
-        holders,
-      });
+      const signature = await program.methods
+        .distribute()
+        .accounts({
+          authority: publicKey,
+          campaign: campaignPda,
+          tokenMint,
+          vault,
+        })
+        .remainingAccounts(remainingAccounts)
+        .rpc();
 
-      const tx = new Transaction().add(ix);
-      const signature = await sendTransaction(tx, connection);
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
 

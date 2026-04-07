@@ -15,9 +15,11 @@ import { api } from "@/lib/api";
 import { buildBuyTokensIx, getOrCreateATA } from "@/lib/agrotoken";
 import { localizeContent } from "@/lib/contentLocalization";
 import { useI18n } from "@/lib/i18n";
+import { useAgroProgram } from "@/hooks/useAgroProgram";
+import { BN } from "@coral-xyz/anchor";
 
 const PROGRAM_ID = new PublicKey(
-  process.env.NEXT_PUBLIC_PROGRAM_ID ?? "Agro111111111111111111111111111111111111111",
+  process.env.NEXT_PUBLIC_PROGRAM_ID ?? "GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY",
 );
 
 export default function CampaignDetailsPage() {
@@ -137,17 +139,18 @@ export default function CampaignDetailsPage() {
     [language],
   );
 
+  const { program, getCampaignPdAs } = useAgroProgram();
+
   async function handleBuy(amount: number) {
-    if (!campaign || !publicKey) {
+    if (!campaign || !publicKey || !program) {
       throw new Error(text.walletRequired);
     }
-    if (!campaign.onChainAddress || !campaign.tokenMintAddress || !campaign.vaultAddress) {
-      throw new Error(text.missingAddresses);
-    }
 
-    const campaignPda = new PublicKey(campaign.onChainAddress);
-    const tokenMint = new PublicKey(campaign.tokenMintAddress);
-    const vault = new PublicKey(campaign.vaultAddress);
+    const { campaignPda, tokenMint, vault } = getCampaignPdAs(
+      new PublicKey(campaign.farmerWallet),
+      campaign.id
+    );
+
     const usdcMint = new PublicKey(
       process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
     );
@@ -159,19 +162,19 @@ export default function CampaignDetailsPage() {
     if (usdcAta.instruction) tx.add(usdcAta.instruction);
     if (tokenAta.instruction) tx.add(tokenAta.instruction);
 
-    const buyIx = await buildBuyTokensIx({
-      investor: publicKey,
-      campaignPda,
-      investorUsdcAccount: usdcAta.address,
-      investorTokenAccount: tokenAta.address,
-      vault,
-      tokenMint,
-      programId: PROGRAM_ID,
-      amount,
-    });
-    tx.add(buyIx);
+    const signature = await program.methods
+      .buyTokens(new BN(amount))
+      .accounts({
+        investor: publicKey,
+        campaign: campaignPda,
+        investorUsdcAccount: usdcAta.address,
+        investorTokenAccount: tokenAta.address,
+        vault,
+        tokenMint,
+      })
+      .preInstructions(tx.instructions)
+      .rpc();
 
-    const signature = await sendTransaction(tx, connection);
     await connection.confirmTransaction(signature, "confirmed");
     setTxSig(signature);
 
@@ -286,9 +289,9 @@ export default function CampaignDetailsPage() {
                 note={
                   campaign.riskScore !== null
                     ? localizeContent(
-                        campaign.riskExplanation ?? translateRiskLabel(campaign.riskScore),
-                        language,
-                      )
+                      campaign.riskExplanation ?? translateRiskLabel(campaign.riskScore),
+                      language,
+                    )
                     : undefined
                 }
                 tone={riskTone}
@@ -396,11 +399,10 @@ export default function CampaignDetailsPage() {
 
             {rescoreFeedback && (
               <div
-                className={`mt-3 rounded-[0.9rem] px-3 py-2 text-sm ${
-                  rescoreFeedback.type === "success"
-                    ? "bg-emerald-50 text-emerald-800"
-                    : "bg-rose-50 text-rose-800"
-                }`}
+                className={`mt-3 rounded-[0.9rem] px-3 py-2 text-sm ${rescoreFeedback.type === "success"
+                  ? "bg-emerald-50 text-emerald-800"
+                  : "bg-rose-50 text-rose-800"
+                  }`}
               >
                 {rescoreFeedback.message}
               </div>
@@ -433,11 +435,10 @@ function HeroMetric({
 }) {
   return (
     <div
-      className={`rounded-[1.1rem] border px-4 py-4 ${
-        tone === "warm"
-          ? "border-[#d8bb8e]/22 bg-[#d8bb8e]/10 text-white"
-          : "border-white/10 bg-white/6 text-white"
-      }`}
+      className={`rounded-[1.1rem] border px-4 py-4 ${tone === "warm"
+        ? "border-[#d8bb8e]/22 bg-[#d8bb8e]/10 text-white"
+        : "border-white/10 bg-white/6 text-white"
+        }`}
     >
       <p className="text-[11px] uppercase tracking-[0.22em] text-white/62">{label}</p>
       <p className="mt-2 text-2xl font-semibold tracking-[-0.03em]">{value}</p>

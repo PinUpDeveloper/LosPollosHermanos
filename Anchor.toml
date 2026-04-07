@@ -1,15 +1,15 @@
 [toolchain]
-anchor_version = "0.30.1"
+anchor_version = "0.31.1"
 
 [features]
 seeds = true
 skip-lint = false
 
 [programs.devnet]
-agrotoken = "Agro111111111111111111111111111111111111111"
+agrotoken = "GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY"
 
 [programs.localnet]
-agrotoken = "Agro111111111111111111111111111111111111111"
+agrotoken = "GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY"
 
 [registry]
 url = "https://api.apr.dev"

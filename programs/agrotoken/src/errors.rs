@@ -2,34 +2,48 @@ use anchor_lang::prelude::*;
 
 #[error_code]
 pub enum AgroTokenError {
-    #[msg("Campaign is not active")]
+    #[msg("Campaign is not in Active status")]
     CampaignNotActive,
-    #[msg("Campaign is not funded")]
+
+    #[msg("Campaign is not in Funded status")]
     CampaignNotFunded,
+
     #[msg("Campaign is not ready for distribution")]
     CampaignNotReadyForDistribution,
+
     #[msg("Unauthorized caller")]
     Unauthorized,
-    #[msg("Invalid token amount")]
+
+    #[msg("Token amount must be greater than zero")]
     InvalidAmount,
-    #[msg("Campaign supply exceeded")]
+
+    #[msg("Purchase would exceed total supply")]
     SupplyExceeded,
-    #[msg("Math overflow")]
+
+    #[msg("Arithmetic overflow")]
     MathOverflow,
-    #[msg("Distribution requires holder accounts in remaining_accounts")]
+
+    #[msg("Holder accounts must be passed via remaining_accounts")]
     MissingHolderAccounts,
+
     #[msg("Campaign cannot be cancelled in current state")]
     InvalidCancelState,
-    #[msg("Campaign metadata exceeds allocated storage")]
+
+    #[msg("Title or description exceeds max length")]
     MetadataTooLong,
-    #[msg("USDC mint must use 6 decimals")]
+
+    #[msg("USDC mint must have 6 decimals")]
     InvalidUsdcMint,
-    #[msg("Remaining accounts must be passed in pairs")]
+
+    #[msg("remaining_accounts must come in pairs")]
     InvalidRemainingAccounts,
-    #[msg("Invalid holder share token account")]
+
+    #[msg("Token account mint does not match share-token mint")]
     InvalidHolderTokenAccount,
-    #[msg("Invalid payout token account")]
+
+    #[msg("Payout account mint does not match USDC mint")]
     InvalidPayoutTokenAccount,
-    #[msg("Holder authority must sign and own the share token account")]
+
+    #[msg("Holder authority mismatch or missing signature")]
     InvalidHolderAuthority,
 }

@@ -11,4 +11,3 @@ pub use cancel::*;
 pub use confirm_harvest::*;
 pub use create_campaign::*;
 pub use distribute::*;
-
