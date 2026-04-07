@@ -44,9 +44,9 @@
 - [docs/](docs/) — текстовая документация проекта
 - [docs/roadmap.md](docs/roadmap.md) — технический roadmap реализации
 - [docs/feature-roadmap.md](docs/feature-roadmap.md) — продуктовый roadmap и demo-фичи
-- [assets/screenshots/](assets/screenshots/) — скриншоты интерфейса
-- [assets/gifs/](assets/gifs/) — GIF и короткие demo-анимации
-- [assets/diagrams/](assets/diagrams/) — схемы, архитектурные диаграммы и визуальные материалы
+- [assets/screenshots/](assets/screenshots/screenshots.md) — скриншоты интерфейса
+- [assets/gifs/](assets/gifs/gif.md) — GIF и короткие demo-анимации
+- [assets/diagrams/](assets/diagrams/diagrams.md) — схемы, архитектурные диаграммы и визуальные материалы
 
 ---
 
