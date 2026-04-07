@@ -274,16 +274,21 @@ export default function FarmerDashboardPage() {
       );
 
       const remainingAccounts = [];
+      const createAtaInstructions = [];
 
       for (const holder of holdersResponse.data) {
         const holderPk = new PublicKey(holder.investorWallet);
-        const tokenAta = (await getOrCreateATA(connection, publicKey, tokenMint, holderPk)).address;
-        const usdcAta = (await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk)).address;
+        const tokenAtaInfo = await getOrCreateATA(connection, publicKey, tokenMint, holderPk);
+        const usdcAtaInfo = await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk);
 
-        remainingAccounts.push({ pubkey: tokenAta, isSigner: false, isWritable: true });
-        remainingAccounts.push({ pubkey: usdcAta, isSigner: false, isWritable: true });
+        if (tokenAtaInfo.instruction) createAtaInstructions.push(tokenAtaInfo.instruction);
+        if (usdcAtaInfo.instruction) createAtaInstructions.push(usdcAtaInfo.instruction);
+
+        remainingAccounts.push({ pubkey: tokenAtaInfo.address, isSigner: false, isWritable: true });
+        remainingAccounts.push({ pubkey: usdcAtaInfo.address, isSigner: false, isWritable: true });
       }
 
+      console.log("Sending distribute transaction with", createAtaInstructions.length, "setup instructions");
       const signature = await program.methods
         .distribute()
         .accounts({
@@ -293,6 +298,7 @@ export default function FarmerDashboardPage() {
           vault,
         })
         .remainingAccounts(remainingAccounts)
+        .preInstructions(createAtaInstructions)
         .rpc();
 
       await connection.confirmTransaction(signature, "confirmed");
