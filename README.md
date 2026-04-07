@@ -12,6 +12,10 @@
 >
 > Проект разрабатывается для `National Solana Hackathon by Decentrathon`, `Кейс 1: Tokenization of Real-World Assets (RWA)`.
 
+
+
+![alt text](AgroToken.png)
+
 ---
 
 ## Содержание
@@ -236,15 +240,6 @@ npm run dev
 ```bash
 anchor test
 ```
-
----
-
-## Важные замечания по окружению
-
-- целевая сеть — `Solana devnet`
-- проект использует детерминированные `PDA` seeds
-- UI ориентирован на рынок Казахстана
-- продукт нельзя считать завершённым, пока основной сценарий не демонстрируется как реально работающий on-chain
 
 ---
 
