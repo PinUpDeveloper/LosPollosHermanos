@@ -12,6 +12,10 @@
 >
 > Проект разрабатывается для `National Solana Hackathon by Decentrathon`, `Кейс 1: Tokenization of Real-World Assets (RWA)`.
 
+
+
+![alt text](AgroToken.png)
+
 ---
 
 ## Содержание
