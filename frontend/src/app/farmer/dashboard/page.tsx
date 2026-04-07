@@ -24,7 +24,7 @@ const USDC_MINT = new PublicKey(
   process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
 );
 const ORACLE = new PublicKey(
-  process.env.NEXT_PUBLIC_ORACLE_WALLET ?? "11111111111111111111111111111111",
+  process.env.NEXT_PUBLIC_ORACLE_WALLET ?? "FfzC9j1nC2P6GWmNRVQ16yJee3T1u3MRYuDKhXaphRLR",
 );
 
 export default function FarmerDashboardPage() {
@@ -210,13 +210,6 @@ export default function FarmerDashboardPage() {
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
 
-      // Важно: сообщаем бэкенду реальные адреса, которые мы только что создали
-      await api.patch(`/campaigns/${campaignId}`, {
-        onChainAddress: campaignPda.toBase58(),
-        tokenMintAddress: tokenMint.toBase58(),
-        vaultAddress: vault.toBase58(),
-      });
-
       setTitle("");
       setDescription("");
       setTotalSupply("1000");
@@ -240,13 +233,16 @@ export default function FarmerDashboardPage() {
       if (!revenue) return;
       const harvestUsdc = Math.floor(parseFloat(revenue) * 1_000_000);
 
-      const { campaignPda } = getCampaignPdAs(new PublicKey(campaign.farmerWallet), campaign.id);
+      const { campaignPda, vault } = getCampaignPdAs(new PublicKey(campaign.farmerWallet), campaign.id);
+      const farmerUsdc = (await getOrCreateATA(connection, publicKey, USDC_MINT, publicKey)).address;
 
       const signature = await program.methods
         .confirmHarvest(new BN(harvestUsdc))
         .accounts({
           authority: publicKey,
           campaign: campaignPda,
+          vault,
+          farmerUsdc,
         })
         .rpc();
 
@@ -281,16 +277,21 @@ export default function FarmerDashboardPage() {
       );
 
       const remainingAccounts = [];
+      const createAtaInstructions = [];
 
       for (const holder of holdersResponse.data) {
         const holderPk = new PublicKey(holder.investorWallet);
-        const tokenAta = (await getOrCreateATA(connection, publicKey, tokenMint, holderPk)).address;
-        const usdcAta = (await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk)).address;
+        const tokenAtaInfo = await getOrCreateATA(connection, publicKey, tokenMint, holderPk);
+        const usdcAtaInfo = await getOrCreateATA(connection, publicKey, USDC_MINT, holderPk);
 
-        remainingAccounts.push({ pubkey: tokenAta, isSigner: false, isWritable: true });
-        remainingAccounts.push({ pubkey: usdcAta, isSigner: false, isWritable: true });
+        if (tokenAtaInfo.instruction) createAtaInstructions.push(tokenAtaInfo.instruction);
+        if (usdcAtaInfo.instruction) createAtaInstructions.push(usdcAtaInfo.instruction);
+
+        remainingAccounts.push({ pubkey: tokenAtaInfo.address, isSigner: false, isWritable: true });
+        remainingAccounts.push({ pubkey: usdcAtaInfo.address, isSigner: false, isWritable: true });
       }
 
+      console.log("Sending distribute transaction with", createAtaInstructions.length, "setup instructions");
       const signature = await program.methods
         .distribute()
         .accounts({
@@ -300,6 +301,7 @@ export default function FarmerDashboardPage() {
           vault,
         })
         .remainingAccounts(remainingAccounts)
+        .preInstructions(createAtaInstructions)
         .rpc();
 
       await connection.confirmTransaction(signature, "confirmed");
