@@ -24,7 +24,7 @@ const USDC_MINT = new PublicKey(
   process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
 );
 const ORACLE = new PublicKey(
-  process.env.NEXT_PUBLIC_ORACLE_WALLET ?? "11111111111111111111111111111111",
+  process.env.NEXT_PUBLIC_ORACLE_WALLET ?? "FfzC9j1nC2P6GWmNRVQ16yJee3T1u3MRYuDKhXaphRLR",
 );
 
 export default function FarmerDashboardPage() {
@@ -209,13 +209,6 @@ export default function FarmerDashboardPage() {
 
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
-
-      // Важно: сообщаем бэкенду реальные адреса, которые мы только что создали
-      await api.patch(`/campaigns/${campaignId}`, {
-        onChainAddress: campaignPda.toBase58(),
-        tokenMintAddress: tokenMint.toBase58(),
-        vaultAddress: vault.toBase58(),
-      });
 
       setTitle("");
       setDescription("");

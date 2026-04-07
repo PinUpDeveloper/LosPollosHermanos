@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { PublicKey } from "@solana/web3.js";
 import { Campaign } from "@/hooks/useCampaigns";
+import { useAgroProgram } from "@/hooks/useAgroProgram";
 import { useI18n } from "@/lib/i18n";
 
 const EXPLORER_BASE = "https://explorer.solana.com/address/";
@@ -70,51 +72,58 @@ export function SolanaVerificationPanel({ campaign }: { campaign: Campaign }) {
   const text =
     language === "ru"
       ? {
-          title: "Проверка в Solana",
-          subtitle:
-            "Все значения ниже хранятся on-chain и могут быть независимо проверены через Solana Explorer.",
-          campaignPda: "Адрес кампании (PDA)",
-          tokenMint: "Адрес выпуска токена",
-          vault: "Хранилище USDC",
-          status: "Статус",
-          totalSupply: "Общий объём",
-          tokensSold: "Продано токенов",
-          proofHash: "Хеш подтверждения актива",
-          copy: "Скопировать",
-          open: "Открыть в Solana Explorer",
-          tokens: "токенов",
-        }
+        title: "Проверка в Solana",
+        subtitle:
+          "Все значения ниже хранятся on-chain и могут быть независимо проверены через Solana Explorer.",
+        campaignPda: "Адрес кампании (PDA)",
+        tokenMint: "Адрес выпуска токена",
+        vault: "Хранилище USDC",
+        status: "Статус",
+        totalSupply: "Общий объём",
+        tokensSold: "Продано токенов",
+        proofHash: "Хеш подтверждения актива",
+        copy: "Скопировать",
+        open: "Открыть в Solana Explorer",
+        tokens: "токенов",
+      }
       : language === "kk"
         ? {
-            title: "Solana тексеруі",
-            subtitle:
-              "Төмендегі барлық мәндер on-chain сақталады және оларды Solana Explorer арқылы тәуелсіз тексеруге болады.",
-            campaignPda: "Кампания адресі (PDA)",
-            tokenMint: "Токен шығару адресі",
-            vault: "USDC қоймасы",
-            status: "Күйі",
-            totalSupply: "Жалпы көлем",
-            tokensSold: "Сатылған токендер",
-            proofHash: "Активті растау hash-і",
-            copy: "Көшіру",
-            open: "Solana Explorer-де ашу",
-            tokens: "токен",
-          }
+          title: "Solana тексеруі",
+          subtitle:
+            "Төмендегі барлық мәндер on-chain сақталады және оларды Solana Explorer арқылы тәуелсіз тексеруге болады.",
+          campaignPda: "Кампания адресі (PDA)",
+          tokenMint: "Токен шығару адресі",
+          vault: "USDC қоймасы",
+          status: "Күйі",
+          totalSupply: "Жалпы көлем",
+          tokensSold: "Сатылған токендер",
+          proofHash: "Активті растау hash-і",
+          copy: "Көшіру",
+          open: "Solana Explorer-де ашу",
+          tokens: "токен",
+        }
         : {
-            title: "Solana verification",
-            subtitle:
-              "All values below are stored on-chain and can be independently verified in Solana Explorer.",
-            campaignPda: "Campaign address (PDA)",
-            tokenMint: "Token mint address",
-            vault: "USDC vault",
-            status: "Status",
-            totalSupply: "Total supply",
-            tokensSold: "Tokens sold",
-            proofHash: "Proof hash",
-            copy: "Copy",
-            open: "Open in Solana Explorer",
-            tokens: "tokens",
-          };
+          title: "Solana verification",
+          subtitle:
+            "All values below are stored on-chain and can be independently verified in Solana Explorer.",
+          campaignPda: "Campaign address (PDA)",
+          tokenMint: "Token mint address",
+          vault: "USDC vault",
+          status: "Status",
+          totalSupply: "Total supply",
+          tokensSold: "Tokens sold",
+          proofHash: "Proof hash",
+          copy: "Copy",
+          open: "Open in Solana Explorer",
+          tokens: "tokens",
+        };
+
+  const { getCampaignPdAs } = useAgroProgram();
+
+  const { campaignPda, tokenMint, vault } = getCampaignPdAs(
+    new PublicKey(campaign.farmerWallet),
+    campaign.id,
+  );
 
   return (
     <div className="panel p-6">
@@ -134,12 +143,12 @@ export function SolanaVerificationPanel({ campaign }: { campaign: Campaign }) {
       <div className="mt-5">
         <VerificationRow
           label={text.campaignPda}
-          value={campaign.onChainAddress}
+          value={campaignPda.toBase58()}
           action={
-            campaign.onChainAddress ? (
+            campaignPda ? (
               <>
-                <CopyButton value={campaign.onChainAddress} title={text.copy} />
-                <ExplorerLink address={campaign.onChainAddress} title={text.open} />
+                <CopyButton value={campaignPda.toBase58()} title={text.copy} />
+                <ExplorerLink address={campaignPda.toBase58()} title={text.open} />
               </>
             ) : null
           }
@@ -147,12 +156,12 @@ export function SolanaVerificationPanel({ campaign }: { campaign: Campaign }) {
         />
         <VerificationRow
           label={text.tokenMint}
-          value={campaign.tokenMintAddress}
+          value={tokenMint.toBase58()}
           action={
-            campaign.tokenMintAddress ? (
+            tokenMint ? (
               <>
-                <CopyButton value={campaign.tokenMintAddress} title={text.copy} />
-                <ExplorerLink address={campaign.tokenMintAddress} title={text.open} />
+                <CopyButton value={tokenMint.toBase58()} title={text.copy} />
+                <ExplorerLink address={tokenMint.toBase58()} title={text.open} />
               </>
             ) : null
           }
@@ -160,12 +169,12 @@ export function SolanaVerificationPanel({ campaign }: { campaign: Campaign }) {
         />
         <VerificationRow
           label={text.vault}
-          value={campaign.vaultAddress}
+          value={vault.toBase58()}
           action={
-            campaign.vaultAddress ? (
+            vault ? (
               <>
-                <CopyButton value={campaign.vaultAddress} title={text.copy} />
-                <ExplorerLink address={campaign.vaultAddress} title={text.open} />
+                <CopyButton value={vault.toBase58()} title={text.copy} />
+                <ExplorerLink address={vault.toBase58()} title={text.open} />
               </>
             ) : null
           }

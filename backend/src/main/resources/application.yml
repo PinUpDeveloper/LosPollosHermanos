@@ -22,6 +22,6 @@ agrotoken:
   solana:
     rpc-url: ${AGROTOKEN_SOLANA_RPC_URL:https://api.devnet.solana.com}
     program-id: ${AGROTOKEN_PROGRAM_ID:GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY}
-    oracle-wallet: ${AGROTOKEN_ORACLE_WALLET:Oracle11111111111111111111111111111111111}
+    oracle-wallet: ${AGROTOKEN_ORACLE_WALLET:FfzC9j1nC2P6GWmNRVQ16yJee3T1u3MRYuDKhXaphRLR}
     usdc-mint: ${AGROTOKEN_USDC_MINT:4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU}
 
