@@ -1,0 +1,626 @@
+{
+  "address": "GM4oyeT5WV1mC1KVgwPMhUV4YMJw8e1i1GKkXMjYnvvY",
+  "metadata": {
+    "name": "agrotoken",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Anchor program for tokenized agricultural harvest campaigns"
+  },
+  "instructions": [
+    {
+      "name": "burn_tokens",
+      "discriminator": [
+        76,
+        15,
+        51,
+        254,
+        229,
+        215,
+        121,
+        66
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "buy_tokens",
+      "discriminator": [
+        189,
+        21,
+        230,
+        133,
+        247,
+        2,
+        110,
+        42
+      ],
+      "accounts": [
+        {
+          "name": "investor",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "investor_usdc_account",
+          "docs": [
+            "Investor's USDC account (source of payment)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "investor_token_account",
+          "docs": [
+            "Investor's share-token account (will receive minted tokens)."
+          ],
+          "writable": true
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "token_mint",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "cancel_campaign",
+      "discriminator": [
+        66,
+        10,
+        32,
+        138,
+        122,
+        36,
+        134,
+        202
+      ],
+      "accounts": [
+        {
+          "name": "farmer",
+          "writable": true,
+          "signer": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "confirm_harvest",
+      "discriminator": [
+        189,
+        129,
+        2,
+        164,
+        193,
+        209,
+        52,
+        160
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        }
+      ],
+      "args": [
+        {
+          "name": "harvest_total_usdc",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "create_campaign",
+      "discriminator": [
+        111,
+        131,
+        187,
+        98,
+        160,
+        193,
+        114,
+        244
+      ],
+      "accounts": [
+        {
+          "name": "farmer",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  99,
+                  97,
+                  109,
+                  112,
+                  97,
+                  105,
+                  103,
+                  110
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "farmer"
+              },
+              {
+                "kind": "arg",
+                "path": "campaign_id"
+              }
+            ]
+          }
+        },
+        {
+          "name": "usdc_mint",
+          "docs": [
+            "USDC mint – we enforce 6 decimals."
+          ]
+        },
+        {
+          "name": "token_mint",
+          "docs": [
+            "Share-token mint created as PDA of the campaign."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  116,
+                  111,
+                  107,
+                  101,
+                  110,
+                  95,
+                  109,
+                  105,
+                  110,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              }
+            ]
+          }
+        },
+        {
+          "name": "vault",
+          "docs": [
+            "Vault that will hold collected USDC."
+          ],
+          "writable": true,
+          "pda": {
+            "seeds": [
+              {
+                "kind": "const",
+                "value": [
+                  118,
+                  97,
+                  117,
+                  108,
+                  116
+                ]
+              },
+              {
+                "kind": "account",
+                "path": "campaign"
+              }
+            ]
+          }
+        },
+        {
+          "name": "system_program",
+          "address": "11111111111111111111111111111111"
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": [
+        {
+          "name": "campaign_id",
+          "type": "u64"
+        },
+        {
+          "name": "input",
+          "type": {
+            "defined": {
+              "name": "CreateCampaignInput"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "distribute",
+      "discriminator": [
+        191,
+        44,
+        223,
+        207,
+        164,
+        236,
+        126,
+        61
+      ],
+      "accounts": [
+        {
+          "name": "authority",
+          "writable": true,
+          "signer": true
+        },
+        {
+          "name": "campaign",
+          "writable": true
+        },
+        {
+          "name": "token_mint",
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "vault",
+          "writable": true,
+          "relations": [
+            "campaign"
+          ]
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+        }
+      ],
+      "args": []
+    }
+  ],
+  "accounts": [
+    {
+      "name": "Campaign",
+      "discriminator": [
+        50,
+        40,
+        49,
+        11,
+        157,
+        220,
+        229,
+        192
+      ]
+    }
+  ],
+  "errors": [
+    {
+      "code": 6000,
+      "name": "CampaignNotActive",
+      "msg": "Campaign is not in Active status"
+    },
+    {
+      "code": 6001,
+      "name": "CampaignNotFunded",
+      "msg": "Campaign is not in Funded status"
+    },
+    {
+      "code": 6002,
+      "name": "CampaignNotReadyForDistribution",
+      "msg": "Campaign is not ready for distribution"
+    },
+    {
+      "code": 6003,
+      "name": "Unauthorized",
+      "msg": "Unauthorized caller"
+    },
+    {
+      "code": 6004,
+      "name": "InvalidAmount",
+      "msg": "Token amount must be greater than zero"
+    },
+    {
+      "code": 6005,
+      "name": "SupplyExceeded",
+      "msg": "Purchase would exceed total supply"
+    },
+    {
+      "code": 6006,
+      "name": "MathOverflow",
+      "msg": "Arithmetic overflow"
+    },
+    {
+      "code": 6007,
+      "name": "MissingHolderAccounts",
+      "msg": "Holder accounts must be passed via remaining_accounts"
+    },
+    {
+      "code": 6008,
+      "name": "InvalidCancelState",
+      "msg": "Campaign cannot be cancelled in current state"
+    },
+    {
+      "code": 6009,
+      "name": "MetadataTooLong",
+      "msg": "Title or description exceeds max length"
+    },
+    {
+      "code": 6010,
+      "name": "InvalidUsdcMint",
+      "msg": "USDC mint must have 6 decimals"
+    },
+    {
+      "code": 6011,
+      "name": "InvalidRemainingAccounts",
+      "msg": "remaining_accounts must come in pairs"
+    },
+    {
+      "code": 6012,
+      "name": "InvalidHolderTokenAccount",
+      "msg": "Token account mint does not match share-token mint"
+    },
+    {
+      "code": 6013,
+      "name": "InvalidPayoutTokenAccount",
+      "msg": "Payout account mint does not match USDC mint"
+    },
+    {
+      "code": 6014,
+      "name": "InvalidHolderAuthority",
+      "msg": "Holder authority mismatch or missing signature"
+    }
+  ],
+  "types": [
+    {
+      "name": "Campaign",
+      "docs": [
+        "On-chain state that tracks every campaign through its lifecycle."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "farmer",
+            "docs": [
+              "The farmer who created the campaign."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "oracle",
+            "docs": [
+              "An oracle/authority that can confirm harvests."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "campaign_id",
+            "docs": [
+              "Unique numeric id chosen by the farmer."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "title",
+            "docs": [
+              "Human-readable title (≤ TITLE_MAX_LEN bytes)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "docs": [
+              "Human-readable description (≤ DESCRIPTION_MAX_LEN bytes)."
+            ],
+            "type": "string"
+          },
+          {
+            "name": "total_supply",
+            "docs": [
+              "Total number of share-tokens available for sale."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "tokens_sold",
+            "docs": [
+              "Number of share-tokens sold so far."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "price_per_token",
+            "docs": [
+              "Price-per-token in USDC lamports (6 decimals)."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "vault",
+            "docs": [
+              "PDA token-account that holds investor USDC."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "token_mint",
+            "docs": [
+              "Mint of the share-token (decimals = 0)."
+            ],
+            "type": "pubkey"
+          },
+          {
+            "name": "status",
+            "docs": [
+              "Current lifecycle stage."
+            ],
+            "type": {
+              "defined": {
+                "name": "CampaignStatus"
+              }
+            }
+          },
+          {
+            "name": "harvest_total_usdc",
+            "docs": [
+              "Total harvest revenue in USDC lamports, set by oracle."
+            ],
+            "type": "u64"
+          },
+          {
+            "name": "proof_hash",
+            "docs": [
+              "SHA-256 of off-chain proof document."
+            ],
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "created_at",
+            "docs": [
+              "Unix timestamp of creation."
+            ],
+            "type": "i64"
+          },
+          {
+            "name": "bump",
+            "docs": [
+              "PDA bump seed."
+            ],
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CampaignStatus",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Funded"
+          },
+          {
+            "name": "HarvestSold"
+          },
+          {
+            "name": "Distributed"
+          },
+          {
+            "name": "Completed"
+          },
+          {
+            "name": "Cancelled"
+          }
+        ]
+      }
+    },
+    {
+      "name": "CreateCampaignInput",
+      "docs": [
+        "Input argument struct passed when creating a new campaign."
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "oracle",
+            "type": "pubkey"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          },
+          {
+            "name": "total_supply",
+            "type": "u64"
+          },
+          {
+            "name": "price_per_token",
+            "type": "u64"
+          },
+          {
+            "name": "proof_hash",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

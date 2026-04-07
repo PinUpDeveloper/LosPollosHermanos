@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{mint_to, transfer, Mint, MintTo, Token, TokenAccount, Transfer};
+use anchor_spl::token::{self, Mint, MintTo, Token, TokenAccount, Transfer};
 
 use crate::errors::AgroTokenError;
 use crate::state::{Campaign, CampaignStatus};
@@ -8,28 +8,40 @@ use crate::state::{Campaign, CampaignStatus};
 pub struct BuyTokens<'info> {
     #[account(mut)]
     pub investor: Signer<'info>,
+
     #[account(
         mut,
         has_one = token_mint,
-        has_one = vault
+        has_one = vault,
     )]
     pub campaign: Account<'info, Campaign>,
+
+    /// Investor's USDC account (source of payment).
     #[account(
         mut,
-        constraint = investor_usdc_account.owner == investor.key() @ AgroTokenError::Unauthorized,
-        constraint = investor_usdc_account.mint == vault.mint @ AgroTokenError::InvalidUsdcMint
+        constraint = investor_usdc_account.owner == investor.key()
+            @ AgroTokenError::Unauthorized,
+        constraint = investor_usdc_account.mint == vault.mint
+            @ AgroTokenError::InvalidUsdcMint,
     )]
     pub investor_usdc_account: Account<'info, TokenAccount>,
+
+    /// Investor's share-token account (will receive minted tokens).
     #[account(
         mut,
-        constraint = investor_token_account.owner == investor.key() @ AgroTokenError::Unauthorized,
-        constraint = investor_token_account.mint == token_mint.key() @ AgroTokenError::InvalidHolderTokenAccount
+        constraint = investor_token_account.owner == investor.key()
+            @ AgroTokenError::Unauthorized,
+        constraint = investor_token_account.mint == token_mint.key()
+            @ AgroTokenError::InvalidHolderTokenAccount,
     )]
     pub investor_token_account: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub vault: Account<'info, TokenAccount>,
+
     #[account(mut)]
     pub token_mint: Account<'info, Mint>,
+
     pub token_program: Program<'info, Token>,
 }
 
@@ -40,14 +52,15 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
         AgroTokenError::CampaignNotActive
     );
 
-    let updated_sold = ctx
+    let new_sold = ctx
         .accounts
         .campaign
         .tokens_sold
         .checked_add(amount)
         .ok_or(AgroTokenError::MathOverflow)?;
+
     require!(
-        updated_sold <= ctx.accounts.campaign.total_supply,
+        new_sold <= ctx.accounts.campaign.total_supply,
         AgroTokenError::SupplyExceeded
     );
 
@@ -55,7 +68,8 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
         .checked_mul(ctx.accounts.campaign.price_per_token)
         .ok_or(AgroTokenError::MathOverflow)?;
 
-    transfer(
+    // Transfer USDC from investor → vault.
+    token::transfer(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
             Transfer {
@@ -67,14 +81,21 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
         payment,
     )?;
 
-    let seeds = &[
-        b"campaign".as_ref(),
-        ctx.accounts.campaign.farmer.as_ref(),
-        &ctx.accounts.campaign.campaign_id.to_le_bytes(),
-        &[ctx.accounts.campaign.bump],
+    // Build PDA signer seeds — copy values into locals first to avoid
+    // keeping an immutable borrow on `campaign` across the mutable write below.
+    let farmer_key = ctx.accounts.campaign.farmer;
+    let id_bytes = ctx.accounts.campaign.campaign_id.to_le_bytes();
+    let bump_seed = [ctx.accounts.campaign.bump];
+
+    let signer_seeds: &[&[u8]] = &[
+        b"campaign",
+        farmer_key.as_ref(),
+        &id_bytes,
+        &bump_seed,
     ];
 
-    mint_to(
+    // Mint share-tokens to investor.
+    token::mint_to(
         CpiContext::new_with_signer(
             ctx.accounts.token_program.to_account_info(),
             MintTo {
@@ -82,13 +103,14 @@ pub fn handler(ctx: Context<BuyTokens>, amount: u64) -> Result<()> {
                 to: ctx.accounts.investor_token_account.to_account_info(),
                 authority: ctx.accounts.campaign.to_account_info(),
             },
-            &[seeds],
+            &[signer_seeds],
         ),
         amount,
     )?;
 
-    ctx.accounts.campaign.tokens_sold = updated_sold;
-    if ctx.accounts.campaign.tokens_sold == ctx.accounts.campaign.total_supply {
+    // Update state.
+    ctx.accounts.campaign.tokens_sold = new_sold;
+    if new_sold == ctx.accounts.campaign.total_supply {
         ctx.accounts.campaign.status = CampaignStatus::Funded;
     }
 
