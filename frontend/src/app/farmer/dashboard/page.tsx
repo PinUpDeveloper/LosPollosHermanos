@@ -233,13 +233,16 @@ export default function FarmerDashboardPage() {
       if (!revenue) return;
       const harvestUsdc = Math.floor(parseFloat(revenue) * 1_000_000);
 
-      const { campaignPda } = getCampaignPdAs(new PublicKey(campaign.farmerWallet), campaign.id);
+      const { campaignPda, vault } = getCampaignPdAs(new PublicKey(campaign.farmerWallet), campaign.id);
+      const farmerUsdc = (await getOrCreateATA(connection, publicKey, USDC_MINT, publicKey)).address;
 
       const signature = await program.methods
         .confirmHarvest(new BN(harvestUsdc))
         .accounts({
           authority: publicKey,
           campaign: campaignPda,
+          vault,
+          farmerUsdc,
         })
         .rpc();
 
