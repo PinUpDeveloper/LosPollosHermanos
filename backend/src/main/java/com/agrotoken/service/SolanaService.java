@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import org.p2p.solanaj.rpc.RpcException;
+import org.p2p.solanaj.rpc.types.ConfirmedTransaction;
+
 @Service
 public class SolanaService {
 
@@ -20,22 +23,70 @@ public class SolanaService {
     private final PublicKey programId;
 
     public SolanaService(SolanaConfig solanaConfig) {
+        this(solanaConfig, new RpcClient(solanaConfig.rpcUrl()));
+    }
+
+    public SolanaService(SolanaConfig solanaConfig, RpcClient rpcClient) {
         this.solanaConfig = solanaConfig;
-        this.rpcClient = new RpcClient(solanaConfig.rpcUrl());
+        this.rpcClient = rpcClient;
         this.programId = new PublicKey(solanaConfig.programId());
         log.info("SolanaService initialized: rpc={}, programId={}", solanaConfig.rpcUrl(), solanaConfig.programId());
     }
 
     /**
-     * Derives campaign PDA: seeds = ["campaign", farmer_pubkey, campaign_id_le_bytes]
+     * Verifies that a transaction signature is valid, successful, and belongs to
+     * our program and campaign.
+     */
+    public void verifyTransaction(String signature, String expectedCampaignPda) {
+        try {
+            log.info("Verifying transaction: {} for campaign: {}", signature, expectedCampaignPda);
+            ConfirmedTransaction tx = rpcClient.getApi().getTransaction(signature);
+
+            if (tx == null) {
+                throw new RuntimeException("Transaction not found on-chain: " + signature);
+            }
+            if (tx.getMeta() == null) {
+                throw new RuntimeException("Transaction metadata is missing: " + signature);
+            }
+            if (tx.getMeta().getErr() != null) {
+                throw new RuntimeException(
+                        "Transaction failed on-chain: " + signature + ". Error: " + tx.getMeta().getErr());
+            }
+
+            // Verify program involvement
+            boolean programInvolved = tx.getTransaction().getMessage().getAccountKeys().stream()
+                    .anyMatch(key -> String.valueOf(key).equals(solanaConfig.programId()));
+
+            if (!programInvolved) {
+                throw new RuntimeException("Transaction does not involve our Program ID: " + solanaConfig.programId());
+            }
+
+            // Verify campaign involvement
+            boolean campaignInvolved = tx.getTransaction().getMessage().getAccountKeys().stream()
+                    .anyMatch(key -> String.valueOf(key).equals(expectedCampaignPda));
+
+            if (!campaignInvolved) {
+                throw new RuntimeException(
+                        "Transaction does not involve the expected campaign PDA: " + expectedCampaignPda);
+            }
+
+            log.info("Transaction {} verified successfully", signature);
+        } catch (RpcException e) {
+            log.error("RPC error during transaction verification: {}", signature, e);
+            throw new RuntimeException("Solana RPC verification failed: " + e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Derives campaign PDA: seeds = ["campaign", farmer_pubkey,
+     * campaign_id_le_bytes]
      */
     public String deriveCampaignAddress(String farmerWallet, long campaignId) {
         byte[] idBytes = longToLeBytes(campaignId);
         PublicKey farmer = new PublicKey(farmerWallet);
         PublicKey pda = PublicKey.findProgramAddress(
                 List.of("campaign".getBytes(), farmer.toByteArray(), idBytes),
-                programId
-        ).getAddress();
+                programId).getAddress();
         return pda.toBase58();
     }
 
@@ -46,8 +97,7 @@ public class SolanaService {
         PublicKey campaign = new PublicKey(campaignPda);
         PublicKey pda = PublicKey.findProgramAddress(
                 List.of("token_mint".getBytes(), campaign.toByteArray()),
-                programId
-        ).getAddress();
+                programId).getAddress();
         return pda.toBase58();
     }
 
@@ -58,8 +108,7 @@ public class SolanaService {
         PublicKey campaign = new PublicKey(campaignPda);
         PublicKey pda = PublicKey.findProgramAddress(
                 List.of("vault".getBytes(), campaign.toByteArray()),
-                programId
-        ).getAddress();
+                programId).getAddress();
         return pda.toBase58();
     }
 
