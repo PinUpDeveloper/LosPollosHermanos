@@ -1,31 +1,34 @@
 package com.agrotoken.service;
 
 import com.agrotoken.dto.CampaignResponse;
-import com.agrotoken.dto.CampaignLifecycleEventResponse;
 import com.agrotoken.dto.ConfirmHarvestRequest;
 import com.agrotoken.dto.CreateCampaignRequest;
 import com.agrotoken.dto.FarmerPassportResponse;
 import com.agrotoken.dto.HolderResponse;
 import com.agrotoken.dto.TransactionContextResponse;
 import com.agrotoken.model.Campaign;
+import com.agrotoken.model.Investment;
 import com.agrotoken.repository.CampaignRepository;
 import com.agrotoken.repository.InvestmentRepository;
 import com.agrotoken.service.TrustScoringService.TrustScoreResult;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class CampaignService {
+    private static final Logger log = LoggerFactory.getLogger(CampaignService.class);
     private final CampaignRepository campaignRepository;
     private final InvestmentRepository investmentRepository;
     private final SolanaService solanaService;
     private final RiskScoringService riskScoringService;
     private final TrustScoringService trustScoringService;
     private final FarmerPassportService farmerPassportService;
+    private final LifecycleService lifecycleService;
 
     public CampaignService(
             CampaignRepository campaignRepository,
@@ -33,14 +36,15 @@ public class CampaignService {
             SolanaService solanaService,
             RiskScoringService riskScoringService,
             TrustScoringService trustScoringService,
-            FarmerPassportService farmerPassportService
-    ) {
+            FarmerPassportService farmerPassportService,
+            LifecycleService lifecycleService) {
         this.campaignRepository = campaignRepository;
         this.investmentRepository = investmentRepository;
         this.solanaService = solanaService;
         this.riskScoringService = riskScoringService;
         this.trustScoringService = trustScoringService;
         this.farmerPassportService = farmerPassportService;
+        this.lifecycleService = lifecycleService;
     }
 
     @Transactional
@@ -54,7 +58,7 @@ public class CampaignService {
         campaign.setTotalSupply(request.totalSupply());
         campaign.setTokensSold(0L);
         campaign.setPricePerToken(request.pricePerToken());
-        campaign.setStatus("ACTIVE");
+        campaign.setStatus("PENDING_ON_CHAIN");
         campaign.setProofDocumentUrl(request.proofDocumentUrl());
         campaign.setProofHash(request.proofHash());
         campaign.setProofStatus("UPLOADED");
@@ -83,6 +87,27 @@ public class CampaignService {
     }
 
     @Transactional
+    public CampaignResponse finalizeCampaign(Long id, String txSignature) {
+        Campaign campaign = findCampaign(id);
+
+        // Idempotency check: if already active with same signature, just return OK
+        if ("ACTIVE".equals(campaign.getStatus()) && txSignature.equals(campaign.getTxSignature())) {
+            return toResponse(campaign);
+        }
+
+        if (!"PENDING_ON_CHAIN".equals(campaign.getStatus())) {
+            throw new IllegalStateException("Campaign is in wrong state: " + campaign.getStatus());
+        }
+
+        // Verify the on-chain create_campaign transaction
+        solanaService.verifyTransaction(txSignature, List.of(campaign.getFarmerWallet(), campaign.getOnChainAddress()));
+
+        campaign.setStatus("ACTIVE");
+        campaign.setTxSignature(txSignature);
+        return toResponse(campaignRepository.save(campaign));
+    }
+
+    @Transactional
     public CampaignResponse rescoreRisk(Long id) {
         Campaign campaign = findCampaign(id);
         int farmerHistory = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet()).size();
@@ -91,7 +116,7 @@ public class CampaignService {
     }
 
     public List<CampaignResponse> listActiveCampaigns() {
-        return campaignRepository.findAll().stream().map(this::toResponse).toList();
+        return campaignRepository.findByStatus("ACTIVE").stream().map(this::toResponse).toList();
     }
 
     public CampaignResponse getCampaign(Long id) {
@@ -99,12 +124,31 @@ public class CampaignService {
     }
 
     public List<CampaignResponse> getFarmerCampaigns(String wallet) {
+        List<Campaign> campaigns = campaignRepository.findByFarmerWallet(wallet);
+
+        // Anti-ghosting: if some campaigns are PENDING_ON_CHAIN, try to find their tx
+        // in blockchain
+        for (Campaign c : campaigns) {
+            if ("PENDING_ON_CHAIN".equals(c.getStatus())) {
+                try {
+                    String sig = solanaService.findLatestSignature(c.getOnChainAddress());
+                    if (sig != null) {
+                        log.info("Auto-healing campaign {}: found signature {}", c.getId(), sig);
+                        finalizeCampaign(c.getId(), sig);
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed auto-healing for campaign {}: {}", c.getId(), e.getMessage());
+                }
+            }
+        }
+
         return campaignRepository.findByFarmerWallet(wallet).stream()
                 .map(this::toResponse).toList();
     }
 
     /**
-     * Returns on-chain addresses needed for frontend to build a buy_tokens transaction.
+     * Returns on-chain addresses needed for frontend to build a buy_tokens
+     * transaction.
      */
     public TransactionContextResponse buildBuyContext(Long id) {
         Campaign campaign = findCampaign(id);
@@ -120,13 +164,19 @@ public class CampaignService {
     @Transactional
     public CampaignResponse confirmHarvest(Long id, ConfirmHarvestRequest request) {
         Campaign campaign = findCampaign(id);
+
+        // Hard verification on Solana
+        solanaService.verifyTransaction(request.txSignature(),
+                List.of(campaign.getOnChainAddress(), request.authorityWallet()));
+
         campaign.setStatus("HARVEST_SOLD");
         campaign.setHarvestConfirmedAt(LocalDateTime.now());
         return toResponse(campaignRepository.save(campaign));
     }
 
     /**
-     * Returns on-chain addresses needed for frontend to build a distribute transaction.
+     * Returns on-chain addresses needed for frontend to build a distribute
+     * transaction.
      */
     public TransactionContextResponse buildDistributeContext(Long id) {
         Campaign campaign = findCampaign(id);
@@ -145,8 +195,7 @@ public class CampaignService {
                 .map(inv -> new HolderResponse(
                         inv.getInvestorWallet(),
                         inv.getTokensAmount(),
-                        inv.getUsdcPaid()
-                ))
+                        inv.getUsdcPaid()))
                 .toList();
     }
 
@@ -154,21 +203,43 @@ public class CampaignService {
      * Updates tokensSold in DB after a confirmed buy_tokens transaction.
      */
     @Transactional
-    public CampaignResponse recordTokensPurchased(Long id, long amount) {
-        Campaign campaign = findCampaign(id);
-        long previousSold = campaign.getTokensSold();
-        long updatedSold = previousSold + amount;
-        campaign.setTokensSold(updatedSold);
+    public CampaignResponse recordTokensPurchased(Long id, long amount, String txSignature) {
+        int retries = 3;
+        while (retries > 0) {
+            try {
+                Campaign campaign = findCampaign(id);
+                // Verify on Solana
+                solanaService.verifyTransaction(txSignature, List.of(campaign.getOnChainAddress()));
 
-        markFundingMilestones(campaign, previousSold, updatedSold);
+                long previousSold = campaign.getTokensSold();
+                log.info("Updating tokens sold for campaign {}: old={}, adding={}", id, previousSold, amount);
+                long updatedSold = previousSold + amount;
+                campaign.setTokensSold(updatedSold);
 
-        if (updatedSold >= campaign.getTotalSupply()) {
-            campaign.setStatus("FUNDED");
-            if (campaign.getFunded100At() == null) {
-                campaign.setFunded100At(LocalDateTime.now());
+                markFundingMilestones(campaign, previousSold, updatedSold);
+
+                if (updatedSold >= campaign.getTotalSupply()) {
+                    campaign.setStatus("FUNDED");
+                    if (campaign.getFunded100At() == null) {
+                        campaign.setFunded100At(LocalDateTime.now());
+                    }
+                }
+                var saved = toResponse(campaignRepository.save(campaign));
+                log.info("Campaign {} updated: new tokens_sold={}", id, saved.tokensSold());
+                return saved;
+            } catch (org.springframework.orm.ObjectOptimisticLockingFailureException e) {
+                retries--;
+                if (retries == 0)
+                    throw e;
+                log.warn("Optimistic lock conflict for campaign {}, retrying investment record... ({} left)", id,
+                        retries);
+                try {
+                    Thread.sleep(100);
+                } catch (InterruptedException ignored) {
+                }
             }
         }
-        return toResponse(campaignRepository.save(campaign));
+        throw new RuntimeException("Final failure recording tokens after retries");
     }
 
     /**
@@ -187,8 +258,14 @@ public class CampaignService {
      * Updates campaign status to DISTRIBUTED after on-chain distribute tx.
      */
     @Transactional
-    public CampaignResponse markDistributed(Long id) {
+    public void syncInvestments(Long id) {
+        log.info("Manual sync triggered for campaign {}. (No-op after rollback to trust-frontend model)", id);
+    }
+
+    @Transactional
+    public CampaignResponse markDistributed(Long id, String txSignature) {
         Campaign campaign = findCampaign(id);
+        solanaService.verifyTransaction(txSignature, List.of(campaign.getOnChainAddress()));
         campaign.setStatus("DISTRIBUTED");
         campaign.setDistributedAt(LocalDateTime.now());
         return toResponse(campaignRepository.save(campaign));
@@ -225,8 +302,7 @@ public class CampaignService {
                 campaign.getId(), // DB id = on-chain campaign_id
                 campaign.getFarmerWallet(),
                 solanaService.getOracleWallet(),
-                message
-        );
+                message);
     }
 
     private Campaign findCampaign(Long id) {
@@ -238,7 +314,8 @@ public class CampaignService {
         List<Campaign> farmerCampaigns = campaignRepository.findByFarmerWallet(campaign.getFarmerWallet());
         int farmerHistory = farmerCampaigns.size();
         TrustScoreResult trustScore = trustScoringService.score(campaign, farmerHistory);
-        FarmerPassportResponse farmerPassport = farmerPassportService.build(campaign.getFarmerWallet(), farmerCampaigns);
+        FarmerPassportResponse farmerPassport = farmerPassportService.build(campaign.getFarmerWallet(),
+                farmerCampaigns);
 
         return new CampaignResponse(
                 campaign.getId(),
@@ -268,101 +345,7 @@ public class CampaignService {
                 trustScore.trustLabel(),
                 trustScore.trustReasons(),
                 farmerPassport,
-                buildLifecycleEvents(campaign)
-        );
+                lifecycleService.buildEvents(campaign));
     }
 
-    private List<CampaignLifecycleEventResponse> buildLifecycleEvents(Campaign campaign) {
-        List<CampaignLifecycleEventResponse> events = new ArrayList<>();
-
-        events.add(new CampaignLifecycleEventResponse(
-                "CAMPAIGN_CREATED",
-                "Campaign created",
-                "The farmer created the campaign and the on-chain lifecycle started.",
-                campaign.getCreatedAt(),
-                campaign.getCreatedAt() != null,
-                campaign.getFarmerWallet(),
-                campaign.getOnChainAddress(),
-                campaign.getOnChainAddress()
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "PROOF_UPLOADED",
-                "Proof uploaded",
-                "Proof-of-asset document was attached and its hash was linked to the campaign.",
-                campaign.getProofUploadedAt(),
-                campaign.getProofUploadedAt() != null,
-                campaign.getFarmerWallet(),
-                campaign.getOnChainAddress(),
-                campaign.getProofHash()
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "PROOF_VERIFIED",
-                "Oracle verified proof",
-                "The oracle or verifier confirmed that the uploaded proof matches the real-world asset.",
-                campaign.getProofVerifiedAt(),
-                "VERIFIED".equals(campaign.getProofStatus()),
-                campaign.getProofVerifierWallet(),
-                campaign.getProofVerifierWallet(),
-                campaign.getProofHash()
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "FUNDED_25",
-                "25% funded",
-                "The campaign passed the first investor traction milestone.",
-                campaign.getFunded25At(),
-                campaign.getFunded25At() != null,
-                null,
-                campaign.getOnChainAddress(),
-                "25%"
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "FUNDED_50",
-                "50% funded",
-                "The campaign reached the midpoint of its funding target.",
-                campaign.getFunded50At(),
-                campaign.getFunded50At() != null,
-                null,
-                campaign.getOnChainAddress(),
-                "50%"
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "FUNDED_100",
-                "100% funded",
-                "The campaign fully sold its tokenized funding allocation.",
-                campaign.getFunded100At(),
-                campaign.getFunded100At() != null,
-                null,
-                campaign.getOnChainAddress(),
-                "100%"
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "HARVEST_CONFIRMED",
-                "Harvest confirmed",
-                "The harvest result was confirmed and the campaign moved toward payout.",
-                campaign.getHarvestConfirmedAt(),
-                campaign.getHarvestConfirmedAt() != null,
-                campaign.getFarmerWallet(),
-                campaign.getOnChainAddress(),
-                null
-        ));
-
-        events.add(new CampaignLifecycleEventResponse(
-                "PAYOUT_DISTRIBUTED",
-                "Payout distributed",
-                "Revenue distribution for token holders was finalized.",
-                campaign.getDistributedAt(),
-                campaign.getDistributedAt() != null,
-                campaign.getFarmerWallet(),
-                campaign.getOnChainAddress(),
-                campaign.getVaultAddress()
-        ));
-
-        return events;
-    }
 }

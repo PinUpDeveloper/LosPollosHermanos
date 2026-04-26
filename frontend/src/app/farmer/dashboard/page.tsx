@@ -28,8 +28,8 @@ const ORACLE = new PublicKey(
 );
 
 export default function FarmerDashboardPage() {
-  const { campaigns, refresh } = useCampaigns();
   const { publicKey, sendTransaction } = useWallet();
+  const { campaigns, refresh } = useCampaigns(publicKey?.toBase58());
   const { connection } = useConnection();
   const { language, cropOptions, regionOptions, formatNumber, translateCrop, translateRegion } = useI18n();
 
@@ -207,8 +207,20 @@ export default function FarmerDashboardPage() {
         })
         .rpc();
 
-      await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
+
+      // OPTIMIZATION: Send signature to backend immediately!
+      // Even if the next line (confirmTransaction) fails, the backend now knows the signature.
+      api.post(`/campaigns/${campaignId}/finalize`, { txSignature: signature }).catch(() => {
+        // Ignore errors here, we'll try again after confirmation
+      });
+
+      await connection.confirmTransaction(signature, "confirmed");
+
+      // Finalize creation in DB (this will definitely set status to ACTIVE)
+      await api.post(`/campaigns/${campaignId}/finalize`, {
+        txSignature: signature,
+      });
 
       setTitle("");
       setDescription("");
@@ -218,7 +230,39 @@ export default function FarmerDashboardPage() {
       setProofDocumentUrl("");
       refresh();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : text.createError);
+      const errMsg = err instanceof Error ? err.message : "";
+      if (errMsg.includes("already been processed")) {
+        console.log("Transaction already processed, refresh will catch it.");
+        refresh();
+      } else {
+        setError(errMsg || text.createError);
+      }
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function handleFinalize(campaign: Campaign) {
+    if (!publicKey) return;
+    setError("");
+    setBusy(`finalize-${campaign.id}`);
+    try {
+      // If we don't have the signature saved locally (on refresh), 
+      // we might need to ask for it or find it, but for now we assume 
+      // the user has the signature from the last action or we logic-check on-chain.
+      // Since createCampaign logic on frontend currently doesn't persist sig after crash,
+      // in a real app we'd look it up. Here we'll try to use the lastTx if available.
+
+      const sigToUse = lastTx || prompt("Enter Solana transaction signature if you have it:");
+      if (!sigToUse) return;
+
+      await api.post(`/campaigns/${campaign.id}/finalize`, {
+        txSignature: sigToUse,
+      });
+
+      refresh();
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to finalize campaign.");
     } finally {
       setBusy("");
     }
@@ -252,6 +296,7 @@ export default function FarmerDashboardPage() {
       await api.post(`/campaigns/${campaign.id}/confirm`, {
         authorityWallet: publicKey.toBase58(),
         harvestTotalUsdc: harvestUsdc,
+        txSignature: signature,
       });
 
       refresh();
@@ -307,7 +352,9 @@ export default function FarmerDashboardPage() {
       await connection.confirmTransaction(signature, "confirmed");
       setLastTx(signature);
 
-      await api.post(`/campaigns/${campaign.id}/mark-distributed`);
+      await api.post(`/campaigns/${campaign.id}/mark-distributed`, {
+        txSignature: signature,
+      });
       refresh();
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : text.distributeError);
@@ -376,7 +423,11 @@ export default function FarmerDashboardPage() {
               </div>
             </div>
 
-            <button type="submit" disabled={!publicKey || busy === "create"} className="w-full rounded-full bg-soil px-4 py-3 text-sm font-semibold text-[#f6f1e8] disabled:opacity-50">
+            <button
+              type="submit"
+              disabled={!publicKey || !!busy}
+              className="w-full rounded-full bg-soil px-4 py-3 text-sm font-semibold text-[#f6f1e8] disabled:opacity-50"
+            >
               {busy === "create" ? text.creating : text.create}
             </button>
           </div>
@@ -408,6 +459,15 @@ export default function FarmerDashboardPage() {
             </div>
 
             <div className="mt-4 flex flex-wrap gap-3">
+              {campaign.status === "PENDING_ON_CHAIN" && (
+                <button
+                  onClick={() => handleFinalize(campaign)}
+                  disabled={busy === `finalize-${campaign.id}`}
+                  className="rounded-full bg-wheat px-4 py-2 text-sm font-semibold text-soil disabled:opacity-50"
+                >
+                  {busy === `finalize-${campaign.id}` ? text.signing : "Завершить создание"}
+                </button>
+              )}
               {(campaign.status === "FUNDED" || campaign.status === "ACTIVE") && (
                 <button onClick={() => handleConfirmHarvest(campaign)} disabled={busy === `confirm-${campaign.id}`} className="rounded-full border border-bark/16 bg-white/75 px-4 py-2 text-sm text-soil disabled:opacity-50">
                   {busy === `confirm-${campaign.id}` ? text.signing : text.confirm}

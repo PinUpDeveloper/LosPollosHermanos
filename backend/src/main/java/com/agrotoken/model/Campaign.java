@@ -4,6 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Version;
 import java.time.LocalDateTime;
 import lombok.Getter;
 import lombok.Setter;
@@ -15,6 +16,10 @@ public class Campaign {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Version
+    private Integer version;
+
     private String onChainAddress;
     private String farmerWallet;
     private String title;
@@ -27,7 +32,7 @@ public class Campaign {
     private String status;
     private String proofDocumentUrl;
     private String proofHash;
-    private String proofStatus;          // PENDING, UPLOADED, VERIFIED, REJECTED
+    private String proofStatus; // PENDING, UPLOADED, VERIFIED, REJECTED
     private LocalDateTime proofUploadedAt;
     private LocalDateTime proofVerifiedAt;
     private String proofVerifierWallet;
@@ -42,5 +47,5 @@ public class Campaign {
     private LocalDateTime distributedAt;
     private Integer riskScore;
     private String riskExplanation;
+    private String txSignature;
 }
-

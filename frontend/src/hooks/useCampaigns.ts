@@ -238,18 +238,19 @@ const fallbackCampaigns: Campaign[] = [
   },
 ];
 
-export function useCampaigns() {
+export function useCampaigns(farmerWallet?: string) {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(() => {
     setLoading(true);
+    const url = farmerWallet ? `/campaigns/farmer/${farmerWallet}` : "/campaigns";
     api
-      .get<Campaign[]>("/campaigns")
+      .get<Campaign[]>(url)
       .then((response) => setCampaigns(response.data))
       .catch(() => setCampaigns(fallbackCampaigns))
       .finally(() => setLoading(false));
-  }, []);
+  }, [farmerWallet]);
 
   useEffect(() => {
     refresh();

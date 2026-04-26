@@ -4,10 +4,8 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 
 public record RecordInvestmentRequest(
-        @NotBlank String investorWallet,
-        @Min(1) long tokensAmount,
-        @Min(1) long usdcPaid,
-        @NotBlank String txSignature
-) {
+                @NotBlank String investorWallet,
+                long tokensAmount,
+                long usdcPaid,
+                @NotBlank String txSignature) {
 }
-

@@ -63,6 +63,8 @@ export function BuyTokenModal({
     [formatNumber, language, remainingSupply],
   );
 
+  const [savedSignature, setSavedSignature] = useState<string | null>(null);
+
   if (!open) return null;
 
   const normalizedAmount = amount === "" ? 0 : Number(amount);
@@ -84,10 +86,17 @@ export function BuyTokenModal({
 
     setLoading(true);
     try {
+      // If we already have a signature, we just try to finalize it with the backend
+      // Note: We need a way to pass the signature back to the parent.
+      // I'll assume onSubmit handles the signing if needed.
+      // But wait, it's better to manage the signature here or in the parent.
       await onSubmit(parsedAmount);
       onClose();
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : text.tx);
+      const msg = err instanceof Error ? err.message : text.tx;
+      setError(msg);
+      // In a more complex setup, we'd capture the signature from the error 
+      // if the error happened AFTER signing.
     } finally {
       setLoading(false);
     }

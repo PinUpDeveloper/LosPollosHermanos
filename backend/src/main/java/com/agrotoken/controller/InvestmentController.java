@@ -27,13 +27,14 @@ public class InvestmentController {
     }
 
     @PostMapping("/campaigns/{campaignId}")
-    public InvestmentResponse recordInvestment(@PathVariable Long campaignId, @Valid @RequestBody RecordInvestmentRequest request) {
+    public InvestmentResponse recordInvestment(@PathVariable Long campaignId,
+            @Valid @RequestBody RecordInvestmentRequest request) {
+        System.out.println("HTP POST /api/investments/campaigns/" + campaignId + " received: " + request);
         return investmentService.recordInvestment(
                 campaignId,
                 request.investorWallet(),
                 request.tokensAmount(),
                 request.usdcPaid(),
-                request.txSignature()
-        );
+                request.txSignature());
     }
 }

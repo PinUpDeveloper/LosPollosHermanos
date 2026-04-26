@@ -1,12 +1,24 @@
 spring:
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/agrotoken}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/agrotoken}
     username: ${SPRING_DATASOURCE_USERNAME:agrotoken}
     password: ${SPRING_DATASOURCE_PASSWORD:agrotoken}
+    hikari:
+      connection-timeout: 30000
+      maximum-pool-size: 10
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      keepalive-time: 60000
   jpa:
     hibernate:
       ddl-auto: update
     open-in-view: false
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 10
   jackson:
     serialization:
       write-dates-as-timestamps: false

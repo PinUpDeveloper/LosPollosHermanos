@@ -146,51 +146,66 @@ export default function CampaignDetailsPage() {
       throw new Error(text.walletRequired);
     }
 
-    const { campaignPda, tokenMint, vault } = getCampaignPdAs(
-      new PublicKey(campaign.farmerWallet),
-      campaign.id
-    );
+    try {
+      const { campaignPda, tokenMint, vault } = getCampaignPdAs(
+        new PublicKey(campaign.farmerWallet),
+        campaign.id
+      );
 
-    const usdcMint = new PublicKey(
-      process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
-    );
+      const usdcMint = new PublicKey(
+        process.env.NEXT_PUBLIC_USDC_MINT ?? "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU",
+      );
 
-    const usdcAta = await getOrCreateATA(connection, publicKey, usdcMint, publicKey);
-    const tokenAta = await getOrCreateATA(connection, publicKey, tokenMint, publicKey);
+      const usdcAta = await getOrCreateATA(connection, publicKey, usdcMint, publicKey);
+      const tokenAta = await getOrCreateATA(connection, publicKey, tokenMint, publicKey);
 
-    const tx = new Transaction();
-    if (usdcAta.instruction) tx.add(usdcAta.instruction);
-    if (tokenAta.instruction) tx.add(tokenAta.instruction);
+      const tx = new Transaction();
+      if (usdcAta.instruction) tx.add(usdcAta.instruction);
+      if (tokenAta.instruction) tx.add(tokenAta.instruction);
 
-    const signature = await program.methods
-      .buyTokens(new BN(amount))
-      .accounts({
-        investor: publicKey,
-        campaign: campaignPda,
-        investorUsdcAccount: usdcAta.address,
-        investorTokenAccount: tokenAta.address,
-        vault,
-        tokenMint,
-      })
-      .preInstructions(tx.instructions)
-      .rpc();
+      const signature = await program.methods
+        .buyTokens(new BN(amount))
+        .accounts({
+          investor: publicKey,
+          campaign: campaignPda,
+          investorUsdcAccount: usdcAta.address,
+          investorTokenAccount: tokenAta.address,
+          vault,
+          tokenMint,
+        })
+        .preInstructions(tx.instructions)
+        .rpc();
 
-    await connection.confirmTransaction(signature, "confirmed");
-    setTxSig(signature);
+      setTxSig(signature);
 
-    const usdcPaid = amount * campaign.pricePerToken;
-    await api.post(`/investments/campaigns/${campaign.id}`, {
-      investorWallet: publicKey.toBase58(),
-      tokensAmount: amount,
-      usdcPaid,
-      txSignature: signature,
-    });
-    await api.post(`/campaigns/${campaign.id}/record-purchase`, {
-      investorWallet: publicKey.toBase58(),
-      tokensAmount: amount,
-    });
+      // Sending signature early for better UX/Reliability
+      const usdcPaid = amount * campaign.pricePerToken;
+      api.post(`/investments/campaigns/${campaign.id}`, {
+        investorWallet: publicKey.toBase58(),
+        tokensAmount: amount,
+        usdcPaid,
+        txSignature: signature,
+      }).catch(() => { });
 
-    refresh();
+      await connection.confirmTransaction(signature, "confirmed");
+
+      await api.post(`/investments/campaigns/${campaign.id}`, {
+        investorWallet: publicKey.toBase58(),
+        tokensAmount: amount,
+        usdcPaid,
+        txSignature: signature,
+      });
+
+      refresh();
+    } catch (err: unknown) {
+      const errMsg = err instanceof Error ? err.message : "";
+      if (errMsg.includes("already been processed")) {
+        console.log("Purchase already processed, refreshing UI.");
+        refresh();
+      } else {
+        throw err;
+      }
+    }
   }
 
   async function handleRescore() {
